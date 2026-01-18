@@ -5,6 +5,7 @@ Tools for Pauli Based Computation (PBC), a modality of quantum computation.
 ## Project Structure
 
 - `src/PBCCompiler.jl` - Main module with circuit operations and compiler infrastructure
+- `src/traversal.jl` - Circuit traversal utilities for gate simplifications
 - `test/` - Test suite using TestItemRunner.jl
 
 ## Dependencies
@@ -37,13 +38,41 @@ The `preprocess_circuit` function transforms circuits through stages:
 - `MockRuntime` - Testing runtime where measurements return deterministic results
 - `ComputerState` - Tracks circuit, instruction pointer, and memory state
 
+### Circuit Traversal
+The `traversal` function (`src/traversal.jl`) applies transformations to adjacent pairs of circuit operations:
+```julia
+traversal(circuit, pair_transformation, direction=:right, starting_index=1, end_index=:end)
+```
+- `pair_transformation(op1, op2)` returns:
+  - `(new_op1, new_op2)` tuple to replace the pair
+  - Single operation to combine the pair into one
+  - `nothing` to keep unchanged
+- Supports left-to-right (`:right`) or right-to-left (`:left`) traversal
+- Used for gate commutation, simplification, and compilation passes
+
+**Note on Moshi types**: Use `Moshi.Data.isa_variant(op, CircuitOp.Pauli)` instead of `op isa CircuitOp.Pauli` to check variant types.
+
 ## Development
 
-Run tests:
+### Workflow
+1. Always pull latest master: `git pull`
+2. Create feature branches for new work
+3. Commit often at each change
+4. Update CLAUDE.md with new functionality
+5. Run tests before creating PRs
+
+### Run tests
 ```julia
 using Pkg
 Pkg.test("PBCCompiler")
 ```
+
+### Related source code
+- QuantumClifford.jl source: `../QuantumClifford.jl`
+- QuantumInterface.jl source: `../QuantumInterface.jl`
+
+### Reference paper
+- "Game of Surface Codes" - https://quantum-journal.org/papers/q-2019-03-05-128/pdf/
 
 ## Related Packages
 
