@@ -1,8 +1,7 @@
 name: Benchmarks
 on:
   pull_request_target:
-    branches:
-      - master
+    branches: [master, main]
 permissions:
   pull-requests: write
 
