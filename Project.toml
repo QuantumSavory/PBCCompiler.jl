@@ -1,0 +1,16 @@
+name = "PBCCompiler"
+uuid = "66660b70-1c9c-4e13-82cc-f550c154eed2"
+version = "0.1.0"
+authors = ["Stefan Krastanov <stefan@krastanov.org>"]
+
+[workspace]
+projects = ["benchmark", "docs"]
+
+[deps]
+Moshi = "2e0e35c7-a2e4-4343-998d-7ef72827ed2d"
+QuantumClifford = "0525e862-1e90-11e9-3e4d-1b39d7109de1"
+
+[compat]
+Moshi = "0.3"
+QuantumClifford = "0.10, 0.11"
+julia = "1.12"
