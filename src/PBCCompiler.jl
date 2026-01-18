@@ -1,6 +1,7 @@
 module PBCCompiler
 
 using Moshi.Data: @data
+using Moshi.Match: @match
 using QuantumClifford: PauliOperator, @P_str
 
 ##
@@ -61,6 +62,8 @@ const Circuit = Vector{CircuitOp.Type}
 using .CircuitOp: Measurement, Pauli, ExpHalfPiPauli, ExpQuatPiPauli, ExpEighPiPauli, PrepMagic, PauliConditional, BitConditional
 
 include("traversal.jl")
+include("affectedqubits.jl")
+include("plotting.jl")
 
 ##
 

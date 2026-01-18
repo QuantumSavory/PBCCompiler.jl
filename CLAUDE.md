@@ -6,6 +6,9 @@ Tools for Pauli Based Computation (PBC), a modality of quantum computation.
 
 - `src/PBCCompiler.jl` - Main module with circuit operations and compiler infrastructure
 - `src/traversal.jl` - Circuit traversal utilities for gate simplifications
+- `src/affectedqubits.jl` - Query functions for qubit indices affected by operations
+- `src/plotting.jl` - Plotting function stubs (scaffolding for extensions)
+- `ext/PBCCompilerMakieExt/` - Makie extension for circuit visualization
 - `test/` - Test suite using TestItemRunner.jl
 
 ## Dependencies
@@ -52,6 +55,37 @@ traversal(circuit, pair_transformation, direction=:right, starting_index=1, end_
 
 **Note on Moshi types**: Use `Moshi.Data.isa_variant(op, CircuitOp.Pauli)` instead of `op isa CircuitOp.Pauli` to check variant types.
 
+### Affected Qubits
+The `affectedqubits` function (`src/affectedqubits.jl`) returns the sorted list of qubit indices affected by an operation or circuit:
+```julia
+affectedqubits(op::CircuitOp.Type) -> Vector{Int}
+affectedqubits(circuit::Circuit) -> Vector{Int}
+```
+
+### Circuit Visualization (Makie Extension)
+When Makie is loaded, the `PBCCompilerMakieExt` extension provides circuit plotting:
+```julia
+using CairoMakie  # or GLMakie
+using PBCCompiler
+
+circuit = Circuit([...])
+circuitplot(circuit)  # Create a plot
+circuitplot!(ax, circuit)  # Add to existing axis
+circuitplot_axis(fig[1,1], circuit)  # Create complete figure panel
+```
+
+**Plot features:**
+- Gates shown as colored rectangles spanning affected qubits
+- Horizontal qubit wire lines
+- Measurement results marked with classical bit index (e.g., "c0")
+- Conditional operations marked with dependency index (e.g., "?c0")
+- PrepMagic gates not visualized (placeholder for future)
+
+**Configurable attributes:**
+- `gatewidth`, `qubitspacing` - Gate dimensions
+- `wirecolor`, `wirelinewidth` - Wire appearance
+- `paulicolor`, `measurementcolor`, etc. - Gate colors by variant
+
 ## Development
 
 ### Workflow
@@ -61,10 +95,21 @@ traversal(circuit, pair_transformation, direction=:right, starting_index=1, end_
 4. Update CLAUDE.md with new functionality
 5. Run tests before creating PRs
 
+### Docstring Guidelines
+- Docstrings are for **users**, not developers
+- Do not include implementation details (e.g., "uses pattern matching", "implemented via recursion")
+- Focus on: what the function does, its arguments, return values, and usage examples
+- Implementation notes belong in code comments, not docstrings
+
 ### Run tests
-```julia
-using Pkg
-Pkg.test("PBCCompiler")
+```bash
+julia -tauto --project -e 'using Pkg; Pkg.test("PBCCompiler")'
+```
+
+### Julia invocation
+Always use the `-tauto` flag when launching Julia to utilize all available threads, which drastically speeds up compilation times:
+```bash
+julia -tauto --project
 ```
 
 ### Related source code
