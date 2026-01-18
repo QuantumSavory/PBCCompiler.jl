@@ -25,7 +25,7 @@ Makie.@recipe(CircuitPlot, circuit) do scene
         conditionalcolor = Makie.RGB(0.8, 0.6, 0.2),     # orange
         bitconditionalcolor = Makie.RGB(0.6, 0.6, 0.6),  # gray
         # Text appearance
-        fontsize = 10,
+        fontsize = 0.5,
         textcolor = :white,
     )
 end
@@ -131,16 +131,8 @@ function Makie.plot!(plot::CircuitPlot)
 
         y_min = minimum(qubits) * qs
         y_max = maximum(qubits) * qs
-
-        # Ensure minimum height for single-qubit gates
-        if y_min == y_max
-            y_min -= 0.3 * qs
-            y_max += 0.3 * qs
-        else
-            # Add small padding
-            y_min -= 0.1 * qs
-            y_max += 0.1 * qs
-        end
+        y_min -= 0.3 * qs
+        y_max += 0.3 * qs
 
         # Draw rectangle
         color = gate_color(op, plot)
@@ -158,18 +150,20 @@ function Makie.plot!(plot::CircuitPlot)
                 text = label,
                 align = (:center, :center),
                 fontsize = plot.fontsize[],
-                color = plot.textcolor[]
+                color = plot.textcolor[],
+                markerspace = :data
             )
         end
 
         # Draw measurement bit index (top-right corner)
         mbit = measurement_bit(op)
         if mbit !== nothing
-            Makie.text!(plot, x_right - 0.05, y_max - 0.1;
-                text = "c$mbit",
-                align = (:right, :top),
+            Makie.text!(plot, x_right - 0.05, y_min + 0.1;
+                text = "$mbit",
+                align = (:right, :bottom),
                 fontsize = plot.fontsize[] * 0.7,
-                color = :black
+                color = :black,
+                markerspace = :data
             )
         end
 
@@ -177,10 +171,11 @@ function Makie.plot!(plot::CircuitPlot)
         cbit = conditioning_bit(op)
         if cbit !== nothing
             Makie.text!(plot, x_left + 0.05, y_min + 0.1;
-                text = "?c$cbit",
+                text = "$cbit",
                 align = (:left, :bottom),
                 fontsize = plot.fontsize[] * 0.7,
-                color = :black
+                color = :black,
+                markerspace = :data
             )
         end
     end
