@@ -10,7 +10,14 @@ projects = ["benchmark", "docs"]
 Moshi = "2e0e35c7-a2e4-4343-998d-7ef72827ed2d"
 QuantumClifford = "0525e862-1e90-11e9-3e4d-1b39d7109de1"
 
+[weakdeps]
+Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
+
+[extensions]
+PBCCompilerMakieExt = "Makie"
+
 [compat]
+Makie = "0.24"
 Moshi = "0.3"
 QuantumClifford = "0.10, 0.11"
 julia = "1.12"
