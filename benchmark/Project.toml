@@ -1,0 +1,4 @@
+[deps]
+BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
+PBCCompiler = "66660b70-1c9c-4e13-82cc-f550c154eed2"
+QuantumClifford = "0525e862-1e90-11e9-3e4d-1b39d7109de1"
