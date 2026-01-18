@@ -60,6 +60,8 @@ const Circuit = Vector{CircuitOp.Type}
 
 using .CircuitOp: Measurement, Pauli, ExpHalfPiPauli, ExpQuatPiPauli, ExpEighPiPauli, PrepMagic, PauliConditional, BitConditional
 
+include("traversal.jl")
+
 ##
 
 """TODO docstring"""
