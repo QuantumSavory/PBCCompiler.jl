@@ -3,7 +3,7 @@ module PBCCompilerMakieExt
 using Makie
 using PBCCompiler
 using PBCCompiler: Circuit, CircuitOp, affectedqubits
-using Moshi.Data: @match
+using Moshi.Match: @match
 
 import PBCCompiler: circuitplot, circuitplot!, circuitplot_axis
 

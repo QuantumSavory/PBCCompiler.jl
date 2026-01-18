@@ -102,9 +102,14 @@ circuitplot_axis(fig[1,1], circuit)  # Create complete figure panel
 - Implementation notes belong in code comments, not docstrings
 
 ### Run tests
-```julia
-using Pkg
-Pkg.test("PBCCompiler")
+```bash
+julia -tauto --project -e 'using Pkg; Pkg.test("PBCCompiler")'
+```
+
+### Julia invocation
+Always use the `-tauto` flag when launching Julia to utilize all available threads, which drastically speeds up compilation times:
+```bash
+julia -tauto --project
 ```
 
 ### Related source code
