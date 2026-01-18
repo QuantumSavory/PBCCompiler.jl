@@ -61,7 +61,6 @@ The `affectedqubits` function (`src/affectedqubits.jl`) returns the sorted list 
 affectedqubits(op::CircuitOp.Type) -> Vector{Int}
 affectedqubits(circuit::Circuit) -> Vector{Int}
 ```
-Uses Moshi pattern matching (`@match` from `Moshi.Match`) to handle all CircuitOp variants.
 
 ### Circuit Visualization (Makie Extension)
 When Makie is loaded, the `PBCCompilerMakieExt` extension provides circuit plotting:
@@ -95,6 +94,12 @@ circuitplot_axis(fig[1,1], circuit)  # Create complete figure panel
 3. Commit often at each change
 4. Update CLAUDE.md with new functionality
 5. Run tests before creating PRs
+
+### Docstring Guidelines
+- Docstrings are for **users**, not developers
+- Do not include implementation details (e.g., "uses pattern matching", "implemented via recursion")
+- Focus on: what the function does, its arguments, return values, and usage examples
+- Implementation notes belong in code comments, not docstrings
 
 ### Run tests
 ```julia

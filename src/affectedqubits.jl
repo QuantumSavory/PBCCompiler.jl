@@ -7,8 +7,6 @@ Functions for querying which qubits are affected by circuit operations.
 
 Return the sorted list of qubit indices affected by a circuit operation.
 
-Uses pattern matching on the CircuitOp ADT variants to extract qubit information.
-
 # Examples
 ```julia
 op = Pauli(P"XY", [1, 2])
