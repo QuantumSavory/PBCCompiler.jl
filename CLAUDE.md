@@ -10,6 +10,7 @@ Tools for Pauli Based Computation (PBC), a modality of quantum computation.
 - `src/plotting.jl` - Plotting function stubs (scaffolding for extensions)
 - `ext/PBCCompilerMakieExt/` - Makie extension for circuit visualization
 - `test/` - Test suite using TestItemRunner.jl
+- `benchmark/` - Performance benchmarks using BenchmarkTools.jl
 
 ## Dependencies
 
@@ -94,6 +95,7 @@ circuitplot_axis(fig[1,1], circuit)  # Create complete figure panel
 3. Commit often at each change
 4. Update CLAUDE.md with new functionality
 5. Run tests before creating PRs
+6. Add benchmarks for new performance-critical functionality
 
 ### Docstring Guidelines
 - Docstrings are for **users**, not developers
@@ -105,6 +107,26 @@ circuitplot_axis(fig[1,1], circuit)  # Create complete figure panel
 ```bash
 julia -tauto --project -e 'using Pkg; Pkg.test("PBCCompiler")'
 ```
+
+### Benchmarks
+Benchmarks are managed with BenchmarkTools.jl and run in CI via AirspeedVelocity.jl.
+
+Run benchmarks locally:
+```bash
+julia -tauto --project=benchmark -e 'include("benchmark/benchmarks.jl"); run(SUITE)'
+```
+
+**When to add benchmarks:**
+- New compilation passes or transformations
+- New traversal operations
+- Any function that processes circuits at scale
+- Performance-critical code paths
+
+**Benchmark file structure:**
+- Add new benchmarks to `benchmark/benchmarks.jl`
+- Use `evals=1` for functions that modify state in-place
+- Use `setup=` to create fresh data for each evaluation
+- Group related benchmarks using `BenchmarkGroup`
 
 ### Julia invocation
 Always use the `-tauto` flag when launching Julia to utilize all available threads, which drastically speeds up compilation times:
