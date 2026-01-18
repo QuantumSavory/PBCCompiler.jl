@@ -43,8 +43,10 @@ const P = typeof(P"XYZ")
     end
     """TODO docstring"""
     struct PauliConditional
-        control::Pauli
-        target::Pauli
+        control_pauli::P
+        control_qubits::Vector{Int}
+        target_pauli::P
+        target_qubits::Vector{Int}
     end
     """TODO docstring"""
     struct BitConditional
@@ -56,7 +58,7 @@ end
 """TODO docstring"""
 const Circuit = Vector{CircuitOp.Type}
 
-using .CircuitOp: Measurement, Pauli, ExpHalfPiPauli, ExpQuatPiPauli, ExpEighPiPauli, PauliConditional, BitConditional
+using .CircuitOp: Measurement, Pauli, ExpHalfPiPauli, ExpQuatPiPauli, ExpEighPiPauli, PrepMagic, PauliConditional, BitConditional
 
 ##
 
@@ -170,18 +172,13 @@ function next_quantum_step(compstate::ComputerState)
 end
 
 """TODO docstring"""
-function do_quantum_step(compstate::ComputerState, Measurement)
-    # run the quantum measurement, appropriately updating MemoryState
-end
-
-"""TODO docstring"""
 abstract type QuantumRuntime end
 
 """TODO docstring -- all measurements return `nothing` and classically-trackable states are set as if result was `false`."""
 struct MockRuntime <: QuantumRuntime end
 
 """TODO docstring"""
-function do_quantum_step(compstate::ComputerState, Measurement, runtime=MockRuntime)
+function do_quantum_step(compstate::ComputerState, measurement, runtime::Type{<:QuantumRuntime}=MockRuntime)
     # run the quantum measurement, appropriately updating MemoryState
 end
 
