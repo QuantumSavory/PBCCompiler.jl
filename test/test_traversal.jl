@@ -5,12 +5,6 @@ using PBCCompiler: Circuit, CircuitOp, Pauli, Measurement, ExpHalfPiPauli, trave
 using QuantumClifford: @P_str
 using Moshi.Data: isa_variant
 
-# Helper to create simple Pauli gates for testing
-make_pauli(p, qubits) = Pauli(p, qubits)
-
-# Helper to check if an operation is a Pauli variant (Moshi ADT compatible)
-is_pauli(op) = isa_variant(op, CircuitOp.Pauli)
-
 @testset "Basic traversal" begin
     # Test empty circuit
     circuit = Circuit()
@@ -18,7 +12,7 @@ is_pauli(op) = isa_variant(op, CircuitOp.Pauli)
     @test isempty(circuit)
 
     # Test single-element circuit (no pairs to traverse)
-    circuit = Circuit([make_pauli(P"X", [1])])
+    circuit = Circuit([Pauli(P"X", [1])])
     traversal(circuit, (a, b) -> nothing)
     @test length(circuit) == 1
 end
@@ -29,9 +23,9 @@ end
 
     # Create circuit [X, Y, Z]
     circuit = Circuit([
-        make_pauli(P"X", [1]),
-        make_pauli(P"Y", [1]),
-        make_pauli(P"Z", [1])
+        Pauli(P"X", [1]),
+        Pauli(P"Y", [1]),
+        Pauli(P"Z", [1])
     ])
 
     # After traversal with swap:
@@ -39,9 +33,9 @@ end
     # Pair (X, Z) -> (Z, X): [Y, Z, X]
     traversal(circuit, swap_transform)
 
-    @test is_pauli(circuit[1])
-    @test is_pauli(circuit[2])
-    @test is_pauli(circuit[3])
+    @test isa_variant(circuit[1], CircuitOp.Pauli)
+    @test isa_variant(circuit[2], CircuitOp.Pauli)
+    @test isa_variant(circuit[3], CircuitOp.Pauli)
     # Check that X has moved to the end (bubble sort behavior)
     @test circuit[1].pauli == P"Y"
     @test circuit[2].pauli == P"Z"
@@ -53,9 +47,9 @@ end
     no_op(op1, op2) = nothing
 
     circuit = Circuit([
-        make_pauli(P"X", [1]),
-        make_pauli(P"Y", [1]),
-        make_pauli(P"Z", [1])
+        Pauli(P"X", [1]),
+        Pauli(P"Y", [1]),
+        Pauli(P"Z", [1])
     ])
 
     original_length = length(circuit)
@@ -71,16 +65,16 @@ end
     # Transformation that combines two operations into one
     # For testing, combine any two Paulis into a single X
     combine_paulis(op1, op2) = begin
-        if is_pauli(op1) && is_pauli(op2)
-            return make_pauli(P"X", [1])  # Combine into single X
+        if isa_variant(op1, CircuitOp.Pauli) && isa_variant(op2, CircuitOp.Pauli)
+            return Pauli(P"X", [1])  # Combine into single X
         end
         return nothing
     end
 
     circuit = Circuit([
-        make_pauli(P"X", [1]),
-        make_pauli(P"Y", [1]),
-        make_pauli(P"Z", [1])
+        Pauli(P"X", [1]),
+        Pauli(P"Y", [1]),
+        Pauli(P"Z", [1])
     ])
 
     # After first combination: [X, Z] (X and Y combined into X)
@@ -88,16 +82,16 @@ end
     traversal(circuit, combine_paulis)
 
     @test length(circuit) == 1
-    @test is_pauli(circuit[1])
+    @test isa_variant(circuit[1], CircuitOp.Pauli)
 end
 
 @testset "Left direction traversal" begin
     swap_transform(op1, op2) = (op2, op1)
 
     circuit = Circuit([
-        make_pauli(P"X", [1]),
-        make_pauli(P"Y", [1]),
-        make_pauli(P"Z", [1])
+        Pauli(P"X", [1]),
+        Pauli(P"Y", [1]),
+        Pauli(P"Z", [1])
     ])
 
     # With left direction, start from the right side
@@ -114,10 +108,10 @@ end
     swap_transform(op1, op2) = (op2, op1)
 
     circuit = Circuit([
-        make_pauli(P"X", [1]),
-        make_pauli(P"Y", [1]),
-        make_pauli(P"Z", [1]),
-        make_pauli(P"I", [1])
+        Pauli(P"X", [1]),
+        Pauli(P"Y", [1]),
+        Pauli(P"Z", [1]),
+        Pauli(P"I", [1])
     ])
 
     # Only traverse from index 2 to 2 (pair at positions 2,3)
@@ -133,16 +127,16 @@ end
 @testset "Conditional transformation" begin
     # Only swap if first operation is an X Pauli
     conditional_swap(op1, op2) = begin
-        if is_pauli(op1) && op1.pauli == P"X"
+        if isa_variant(op1, CircuitOp.Pauli) && op1.pauli == P"X"
             return (op2, op1)
         end
         return nothing
     end
 
     circuit = Circuit([
-        make_pauli(P"X", [1]),
-        make_pauli(P"Y", [1]),
-        make_pauli(P"Z", [1])
+        Pauli(P"X", [1]),
+        Pauli(P"Y", [1]),
+        Pauli(P"Z", [1])
     ])
 
     # Pair (X, Y): X is first, so swap -> [Y, X, Z]
@@ -155,7 +149,7 @@ end
 end
 
 @testset "Invalid direction error" begin
-    circuit = Circuit([make_pauli(P"X", [1]), make_pauli(P"Y", [1])])
+    circuit = Circuit([Pauli(P"X", [1]), Pauli(P"Y", [1])])
     @test_throws ArgumentError traversal(circuit, (a,b) -> nothing, :invalid)
 end
 
