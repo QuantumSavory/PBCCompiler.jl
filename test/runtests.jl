@@ -1,10 +1,22 @@
 using PBCCompiler
 using TestItemRunner
 
+JET_flag = false
+
+if get(ENV, "JET_TEST", "") != "true"
+    @info "Skipping JET tests -- must be explicitly enabled."
+    @info "Environment must set JET_TEST=true."
+else
+    JET_flag = true
+end
+
+using Pkg
+JET_flag && Pkg.add("JET")
+
 # filter for the test
 testfilter = ti -> begin
     exclude = Symbol[]
-    if get(ENV, "JET_TEST", "") != "true"
+    if !JET_flag
         push!(exclude, :jet)
     end
     if !(VERSION >= v"1.10")
