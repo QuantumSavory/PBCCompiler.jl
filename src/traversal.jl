@@ -92,6 +92,7 @@ function _traversal_left!(circuit::Circuit, pair_transformation, start_idx::Int,
     while i >= start_idx && i >= 1
         op1 = circuit[i]
         op2 = circuit[i + 1]
+        @debug("pair transformation between $i and $i + 1")
 
         result = pair_transformation(op1, op2)
 
