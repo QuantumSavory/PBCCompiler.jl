@@ -17,7 +17,7 @@ function get_CompState(circuit::Circuit, input_state::Stabilizer)
     MeasRes=Vector{MeasurementResult}(undef, num_bits)
     creg=Array{Union{Nothing, Bool}}(nothing, num_bits)
     Stabilzier_Group=make_stabilizer_list(input_state, circuit)
-    MS=test_MemoryState(PauliQubits, MagicQubits, MeasRes, Stabilzier_Group, creg)
+    MS=MemoryState(PauliQubits, MagicQubits, MeasRes, Stabilzier_Group, creg)
     CS=ComputerState(circuit, 1, MS)
     return CS
 end
@@ -34,7 +34,7 @@ function do_quantum_step(compstate::ComputerState, runtime::Type{<:QuantumRuntim
     bit_index=Meas_i.bit
     CheckList=MS.StabilizerGroup
     (MR,j)=get_measurement_result(CheckList, Meas_i, get_circuit_width(circuit))
-    MS.measurement_results[bit_index]=MR
+    MS.measurement_results[i]=MR
     MS.classical_register[bit_index]=MR.result
     @match MR.result_type begin
         ClassicalDetermRes() => nothing
@@ -43,7 +43,7 @@ function do_quantum_step(compstate::ComputerState, runtime::Type{<:QuantumRuntim
             paulistring=embed(size(MS.StabilizerGroup)[2], Meas_i.qubits, Meas_i.pauli)
             a_stabilizer= Stabilizer([paulistring])
             StabilizerGroup=vcat(MS.StabilizerGroup,a_stabilizer)
-            MS=test_MemoryState(MS.pauli_qubits, MS.magic_qubits, MS.measurement_results, StabilizerGroup, MS.classical_register)
+            MS=MemoryState(MS.pauli_qubits, MS.magic_qubits, MS.measurement_results, StabilizerGroup, MS.classical_register)
         end
         ClassicalRandomRes() => begin
             @debug("This measurement outputs Classical Random Result")
@@ -80,5 +80,12 @@ function run(input_circuit::Circuit, input_state::Stabilizer)
         end
         @debug("Current classical register: $(CS.memory_state.classical_register)")
     end
-    return CS
+    circuit=[]
+    for i in 1:length(CS.circuit)
+        op=CS.circuit[i]
+        pauli=CS.memory_state.measurement_results[i].pauli
+        new_op=CircuitOp.Measurement(pauli,op.bit,op.qubits)
+        push!(circuit,new_op)
+    end
+    return ComputerState(circuit, CS.instruction_pointer, CS.memory_state)
 end

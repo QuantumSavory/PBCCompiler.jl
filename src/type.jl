@@ -70,6 +70,8 @@ using .MeasurementResultType: ClassicalDetermRes, ClassicalRandomRes, QuantumRes
 
 """Struct holding measurement result value and its type"""
 struct MeasurementResult
+    """Corresponding Pauli String of Measurement"""
+    pauli::PauliOperator
     """Single bit measurement result in boolean"""
     result::Union{Bool,Nothing}
     """Measurement result type of this result (ClassicalDetermRes, ClassicalRandomRes, QuantumRes)"""
@@ -77,15 +79,15 @@ struct MeasurementResult
 end
 
 """TODO docstring"""
-classical_deterministic_result(m::Union{Bool,Nothing}) = MeasurementResult(m, ClassicalDetermRes())
+classical_deterministic_result(p::PauliOperator, m::Union{Bool,Nothing}) = MeasurementResult(p, m, ClassicalDetermRes())
 """TODO docstring"""
-classical_random_result(m::Union{Bool,Nothing}) = MeasurementResult(m, ClassicalRandomRes())
+classical_random_result(p::PauliOperator, m::Union{Bool,Nothing}) = MeasurementResult(p, m, ClassicalRandomRes())
 """TODO docstring"""
-quantum_result(m::Union{Bool,Nothing}) = MeasurementResult(m, QuantumRes())
+quantum_result(p::PauliOperator, m::Union{Bool,Nothing}) = MeasurementResult(p, m, QuantumRes())
 
 
 """Struct that contains information describing current quantum state"""
-struct test_MemoryState
+struct MemoryState
     """Vector that contains index of all data qubits that hold circuit input"""
     pauli_qubits::Vector{Int}
     """Vector that contains index of all qubits that hold magic states"""
@@ -106,7 +108,7 @@ struct ComputerState
     """Denote the Pauli Product Measurement that is being processed"""
     instruction_pointer::Int
     """Contain current quantum state"""
-    memory_state::test_MemoryState
+    memory_state::MemoryState
 end
 ##
 """TODO docstring"""

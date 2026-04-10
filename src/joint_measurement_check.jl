@@ -49,14 +49,14 @@ function get_measurement_result(s::Stabilizer, op::CircuitOp.Type, num_qubits::I
         if projection[3] === nothing
             if projection[2]<=len
                 result = rand(Bool[0,1])
-                return (classical_random_result(result),projection[2])
+                return (classical_random_result(op.pauli, result),projection[2])
             else
                 result = Bool(quantum_measurement(op)>>1)
-                return (quantum_result(result),projection[2])
+                return (quantum_result(op.pauli, result),projection[2])
             end
         else
             result = Bool(projection[3]>>1)
-            return (classical_deterministic_result(result),projection[2])
+            return (classical_deterministic_result(op.pauli, result),projection[2])
         end
     end
 end
