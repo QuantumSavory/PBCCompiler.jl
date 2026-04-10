@@ -4,7 +4,9 @@
     Provides functions to handle commute condition and anticommute condition
     Provides functions to handle PBC List update and Check list update
     """
-
+##
+using Moshi.Match: @match
+using QuantumClifford: comm, embed, ⊗
 """
     affectedpaulis(op::CircuitOp.Type) -> Vector{P}
 
@@ -124,8 +126,8 @@ function check_commutation(op1::CircuitOp.Type, op2::CircuitOp.Type)
         #scenario 2: One of them is Pauli Conditional gate
         (op, CircuitOp.PauliConditional(cp, cq, tp, tq)) || (CircuitOp.PauliConditional(cp, cq, tp, tq), op) => begin
             @debug("One of the operations is a Pauli conditional gate. ")
-            cop=ExpQuatPiPauli(cp, cq)
-            top=ExpQuatPiPauli(tp, tq)
+            cop=CircuitOp.ExpQuatPiPauli(cp, cq)
+            top=CircuitOp.ExpQuatPiPauli(tp, tq)
             comm_cop=check_commutation(op, cop)
             comm_top=check_commutation(op, top)
             if comm_cop == 0 && comm_top == 0
@@ -162,11 +164,11 @@ function conjugate(op1::CircuitOp.Type, op2::CircuitOp.Type) #first input is the
     #scenario 2: Conjugated by a PauliControlled gate
         (CircuitOp.PauliConditional(cp, cq, tp, tq), op) => begin
             @debug("One of the operations is a Pauli conditional gate.")
-            op_1=ExpQuatPiPauli(-cp, cq)
+            op_1=CircuitOp.ExpQuatPiPauli(-cp, cq)
             @debug("First conjugation with the control Pauli of the conditional gate.")
-            op_2=ExpQuatPiPauli(-tp, tq)
+            op_2=CircuitOp.ExpQuatPiPauli(-tp, tq)
             @debug("Second conjugation with the target Pauli of the conditional gate.")
-            op_3=ExpQuatPiPauli(cp⊗tp, sort(union(cq, tq)))
+            op_3=CircuitOp.ExpQuatPiPauli(cp⊗tp, sort(union(cq, tq)))
             @debug("First conjugation with the control Pauli of the conditional gate.")
             conju_step1=conjugate(op_1, op2)[1]
             @debug("Second conjugation with the target Pauli of the conditional gate.")
@@ -269,42 +271,42 @@ Helper functions to cancel out adjacent PPR pair
 """
 function merge_rotations(op1::CircuitOp.Type, op2::CircuitOp.Type)
     @match (op1,op2) begin
-        (ExpEighPiPauli(),ExpEighPiPauli()) => begin
+        (CircuitOp.ExpEighPiPauli(),CircuitOp.ExpEighPiPauli()) => begin
             (p1,p2)=complete_paulis(op1,op2)
             qm=maximum(sort(union(affectedqubits(op1), affectedqubits(op2))))
             q=[x for x in 1:qm]
             if p1.xz == p2.xz
                 if xor(p1.phase[1], p2.phase[1]) == 0x02
-                    return ExpHalfPiPauli(p1*p2,q)
+                    return CircuitOp.ExpHalfPiPauli(p1*p2,q)
                 elseif op1.pauli.phase == op2.pauli.phase
-                    return ExpQuatPiPauli(p1,q)
+                    return CircuitOp.ExpQuatPiPauli(p1,q)
                 else
                     return nothing
                 end
             else return nothing
             end
         end
-        (ExpQuatPiPauli(),ExpQuatPiPauli()) => begin
+        (CircuitOp.ExpQuatPiPauli(),CircuitOp.ExpQuatPiPauli()) => begin
             (p1,p2)=complete_paulis(op1,op2)
             qm=maximum(sort(union(affectedqubits(op1), affectedqubits(op2))))
             q=[x for x in 1:qm]
             if p1.xz == p2.xz
                 if xor(p1.phase[1], p2.phase[1]) == 0x02
-                    return ExpHalfPiPauli(p1*p2,q)
+                    return CircuitOp.ExpHalfPiPauli(p1*p2,q)
                 elseif op1.pauli.phase == op2.pauli.phase
-                    return ExpHalfPiPauli(p1,q)
+                    return CircuitOp.ExpHalfPiPauli(p1,q)
                 else
                     return nothing
                 end
             else return nothing
             end
         end
-        (ExpHalfPiPauli(),ExpHalfPiPauli()) => begin
+        (CircuitOp.ExpHalfPiPauli(),CircuitOp.ExpHalfPiPauli()) => begin
             (p1,p2)=complete_paulis(op1,op2)
             qm=maximum(sort(union(affectedqubits(op1), affectedqubits(op2))))
             q=[x for x in 1:qm]
             if p1.xz == p2.xz
-                return ExpHalfPiPauli(p1*p2,q)
+                return CircuitOp.ExpHalfPiPauli(p1*p2,q)
             else return nothing
             end
         end

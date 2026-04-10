@@ -1,6 +1,10 @@
 """
 Helper functions to check the first PPM in circuit, determine MeasurementResultType: ClassicalDetermRes, ClassicalRandomRes, QuantumRes
 """
+##
+using QuantumClifford: project!, Stabilizer
+using Moshi.Data: variant_name, isa_variant
+##
 
 function validate_input(circuit::Circuit, input::Stabilizer)
     if get_circuit_width(circuit)<length(input[1])

@@ -1,6 +1,12 @@
 """
 Functions for compiling quantum circuits by moving measurement operations to the beginning of the circuit.
 """
+##
+using Moshi.Data: variant_name, isa_variant
+using Moshi.Match: @match
+using QuantumClifford: PauliOperator, @P_str, embed, tensor, @S_str, Stabilizer
+using Random: randstring
+##
 struct PauliQubitMismatchError <: Exception
     msg::String
 end
@@ -103,4 +109,64 @@ function make_stabilizer_list(s::Stabilizer, circuit::Circuit)
         push!(new_s,new_i)
     end
     return Stabilizer(new_s)
+end
+
+##
+"""TODO docstring"""
+function remove_pauliconditional(circuit::Circuit)
+    len=length(circuit)
+    for i in 1:len
+        op=circuit[i]
+        @match op begin
+            CircuitOp.PauliConditional(cp, cq, tp, tq) => begin
+                op_1=CircuitOp.ExpQuatPiPauli(-cp, cq)
+                op_2=CircuitOp.ExpQuatPiPauli(-tp, tq)
+                op_3=CircuitOp.ExpQuatPiPauli(cp⊗tp, sort(union(cq, tq)))
+                splice!(circuit, i, (op_3, op_2, op_1))
+            end
+            _ => nothing
+        end
+    end
+end
+
+"""TODO docstring"""
+function group_nonclifford(circuit::Circuit)
+    if find_nonclifford_indices(circuit) != []
+        for index in find_nonclifford_indices(circuit)
+            circuit=traversal(circuit, conjugate, :left, 1, index-1)
+        end
+    end
+end
+
+"""TODO docstring"""
+function merge_ops(circuit::Circuit)
+    traversal(circuit,merge_rotations, :left, 1, :end)
+end
+
+"""TODO docstring"""
+function remove_clifford(circuit::Circuit)
+    validate_circuit(circuit)
+    for index in find_measurement_indices(circuit)
+        circuit=traversal(circuit, conjugate, :left, 1, index-1)
+    end
+    return circuit
+end
+
+"""TODO docstring"""
+function remove_nonclifford(circuit::Circuit)
+    num_non_clifford=length(find_nonclifford_indices(circuit))
+    num_input_qubit=get_circuit_width(circuit)
+    num_magic_state=0
+    for i in 1:num_non_clifford
+        index=find_nonclifford_indices(circuit)[1]
+        num_magic_state=+1
+        gadgetize(circuit, index, num_input_qubit, num_magic_state)
+    end
+end
+
+"""TODO docstring"""
+function remove_post_measurement(circuit::Circuit)
+    # remove all gates after the last measurement
+    index=maximum(find_measurement_indices(circuit))
+    resize!(circuit, index)
 end

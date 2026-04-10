@@ -1,3 +1,8 @@
+using Random: randstring
+using StatsBase: sample
+using QuantumClifford: random_pauli
+##
+
 """
 Functions for generating random quantum circuits for testing purposes.
     generate_random_circuit(num_ops::Int, num_qubits::Int) -> Circuit
@@ -18,23 +23,23 @@ function generate_random_circuit(num_ops::Int, num_qubits::Int)
         qubits = sample((1:num_qubits), rand(1:num_qubits); replace=false, ordered=true)
         p= random_pauli(length(qubits); nophase=false)
         if op_type == 1
-            push!(ops, ExpHalfPiPauli(p, qubits))
+            push!(ops, CircuitOp.ExpHalfPiPauli(p, qubits))
         elseif op_type == 2
-            push!(ops, ExpQuatPiPauli(p, qubits))
+            push!(ops, CircuitOp.ExpQuatPiPauli(p, qubits))
         elseif op_type == 3
-            push!(ops, ExpEighPiPauli(p, qubits))
+            push!(ops, CircuitOp.ExpEighPiPauli(p, qubits))
         else
             control_q=sample(qubits, rand(1:length(qubits)); replace=false, ordered=true)
             target_q = setdiff(qubits, control_q)
             control_p = random_pauli(length(control_q); nophase=true)
             target_p = random_pauli(length(target_q); nophase=true)
-            push!(ops, PauliConditional(control_p, control_q, target_p, target_q))
+            push!(ops, CircuitOp.PauliConditional(control_p, control_q, target_p, target_q))
         end
     end
     for i in 1:num_qubits
         paulis = [P"X", P"Y", P"Z"]
         p = rand(paulis)
-        push!(ops, Measurement(p, i, [i]))
+        push!(ops, CircuitOp.Measurement(p, i, [i]))
     end
     return ops
 end
