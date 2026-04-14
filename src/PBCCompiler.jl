@@ -1,7 +1,7 @@
 module PBCCompiler
 
 include("type.jl")
-include("parser.jl")
+include("io.jl")
 include("traversal.jl")
 include("affectedqubits.jl")
 include("plotting.jl")

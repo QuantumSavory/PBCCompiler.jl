@@ -116,3 +116,33 @@ abstract type QuantumRuntime end
 
 """TODO docstring -- all measurements return `nothing` and classically-trackable states are set as if result was `false`."""
 struct MockRuntime <: QuantumRuntime end
+##
+_result_type_str(::ClassicalDetermRes) = "ClassicalDeterministic"
+_result_type_str(::ClassicalRandomRes) = "ClassicalRandom"
+_result_type_str(::QuantumRes) = "Quantum"
+_result_type_str(x) = string(x)
+
+_bool_str(::Nothing) = "nothing"
+_bool_str(b::Bool) = string(b)
+
+"""
+    show(io, result::ComputerState)
+
+Pretty-print the first four fields of `result.memory_state`:
+`pauli_qubits`, `magic_qubits`, `measurement_results`, and `StabilizerGroup`.
+"""
+function Base.show(io::IO, result::ComputerState)
+    ms = result.memory_state
+    println(io, "ComputerState")
+    println(io, "  Pauli Qubits:    ", ms.pauli_qubits)
+    println(io, "  Magic Qubits:    ", ms.magic_qubits)
+    n = length(ms.measurement_results)
+    println(io, "  Measurements ($n):")
+    for (i, m) in enumerate(ms.measurement_results)
+        println(io, "    [$i] ", m.pauli,
+                    "  →  ", _bool_str(m.result),
+                    "  (", _result_type_str(m.result_type), ")")
+    end
+    print(io, "  Stabilizer Group:\n")
+    show(io, ms.StabilizerGroup)
+end

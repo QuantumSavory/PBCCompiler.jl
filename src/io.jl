@@ -1,3 +1,6 @@
+using JLD2
+import Base: show
+##
 """
     parse_input(filepath::String) -> Circuit
 
@@ -84,4 +87,20 @@ function _single_qubit_ops(gate::AbstractString, q::Int)::Vector{CircuitOp.Type}
     else
         error("Unsupported gate: $gate")
     end
+end
+
+"""
+    save(result::ComputerState, filepath::String)
+
+Save the first four fields of `result.memory_state` (`pauli_qubits`, `magic_qubits`,
+`measurement_results`, `StabilizerGroup`) to a `.jld2` file at `filepath`.
+"""
+function save(result::ComputerState, filepath::String)
+    ms = result.memory_state
+    JLD2.jldsave(filepath;
+        pauli_qubits        = ms.pauli_qubits,
+        magic_qubits        = ms.magic_qubits,
+        measurement_results = ms.measurement_results,
+        StabilizerGroup     = ms.StabilizerGroup,
+    )
 end
