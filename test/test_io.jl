@@ -1,10 +1,11 @@
-@testitem "parser" tags=[:parser] begin
+@testitem "io" tags=[:io] begin
 
 # test_parse.jl — unit tests for parse_input
 using PBCCompiler: Circuit, CircuitOp, Measurement, ExpHalfPiPauli, ExpQuatPiPauli, ExpEighPiPauli, PauliConditional
 using Moshi.Data: isa_variant
 using QuantumClifford: @P_str
-using PBCCompiler: parse_input
+using PBCCompiler: parse_input, save
+using JLD2
 """
     with_qasm(f, gates)
 
@@ -162,6 +163,121 @@ end
     @test all(op.pauli == P"Z" for op in measure_ops)
     @test measure_ops[1].qubits == [0] && measure_ops[1].bit == 0
     @test measure_ops[2].qubits == [1] && measure_ops[2].bit == 1
+end
+
+##
+# ---------------------------------------------------------------------------
+# Helper: construct a minimal ComputerState for testing
+# ---------------------------------------------------------------------------
+function _make_state(;
+    pauli_qubits   = [1, 2],
+    magic_qubits   = [3],
+    meas_results   = MeasurementResult[
+                         classical_deterministic_result(P"XZ", true),
+                         classical_random_result(P"ZX", false),
+                         quantum_result(P"YI", nothing),
+                     ],
+    stab           = Stabilizer([P"XX", P"ZZ"]),
+    classical_reg  = Union{Nothing,Bool}[true, false, nothing],
+)
+    ms = MemoryState(pauli_qubits, magic_qubits, meas_results, stab, classical_reg)
+    return ComputerState(Circuit(), 1, ms)
+end
+
+# ---------------------------------------------------------------------------
+
+# Tests that `save` creates a file at the exact path supplied.
+# Verifies the basic contract that calling save produces a file on disk.
+@testset "save creates file at specified path" begin
+    path = tempname() * ".jld2"
+    save(_make_state(), path)
+    @test isfile(path)
+    rm(path)
+end
+
+# Tests that the saved file contains exactly the four expected top-level keys
+# (`pauli_qubits`, `magic_qubits`, `measurement_results`, `StabilizerGroup`)
+# and that `classical_register` — the fifth field of MemoryState — is absent.
+@testset "save writes correct keys" begin
+    path = tempname() * ".jld2"
+    save(_make_state(), path)
+    data = JLD2.load(path)
+    @test haskey(data, "pauli_qubits")
+    @test haskey(data, "magic_qubits")
+    @test haskey(data, "measurement_results")
+    @test haskey(data, "StabilizerGroup")
+    @test !haskey(data, "classical_register")
+    rm(path)
+end
+
+# Tests that `pauli_qubits` and `magic_qubits` round-trip exactly through the
+# JLD2 file, including the non-default case of distinct index vectors.
+@testset "save round-trips pauli_qubits and magic_qubits" begin
+    path = tempname() * ".jld2"
+    save(_make_state(pauli_qubits=[1, 3, 5], magic_qubits=[2, 4]), path)
+    data = JLD2.load(path)
+    @test data["pauli_qubits"] == [1, 3, 5]
+    @test data["magic_qubits"] == [2, 4]
+    rm(path)
+end
+
+# Tests that each MeasurementResult (Pauli string, boolean result, result type)
+# round-trips faithfully, covering all three result-type variants and a `nothing`
+# result value.
+@testset "save round-trips measurement_results" begin
+    path = tempname() * ".jld2"
+    save(_make_state(), path)
+    data   = JLD2.load(path)
+    loaded = data["measurement_results"]
+
+    @test length(loaded) == 3
+    @test loaded[1].pauli  == P"XZ"
+    @test loaded[1].result == true
+    @test loaded[1].result_type == ClassicalDetermRes()
+
+    @test loaded[2].pauli  == P"ZX"
+    @test loaded[2].result == false
+    @test loaded[2].result_type == ClassicalRandomRes()
+
+    @test loaded[3].pauli  == P"YI"
+    @test loaded[3].result === nothing
+    @test loaded[3].result_type == QuantumRes()
+    rm(path)
+end
+
+# Tests that the StabilizerGroup round-trips through the JLD2 file,
+# checking both the number of generators and their individual Pauli strings.
+@testset "save round-trips StabilizerGroup" begin
+    stab = Stabilizer([P"XX", P"ZZ"])
+    path = tempname() * ".jld2"
+    save(_make_state(stab=stab), path)
+    data   = JLD2.load(path)
+    loaded = data["StabilizerGroup"]
+
+    @test length(loaded) == 2
+    @test loaded[1] == P"XX"
+    @test loaded[2] == P"ZZ"
+    rm(path)
+end
+
+# Tests edge-case behaviour when both `pauli_qubits` and `magic_qubits` are
+# empty vectors and there are no measurement results. The file must still be
+# created and all four keys must be present.
+@testset "save handles empty qubit and measurement vectors" begin
+    path = tempname() * ".jld2"
+    save(_make_state(
+        pauli_qubits  = Int[],
+        magic_qubits  = Int[],
+        meas_results  = MeasurementResult[],
+        stab          = Stabilizer([P"I"]),
+        classical_reg = Union{Nothing,Bool}[],
+    ), path)
+    data = JLD2.load(path)
+    @test isfile(path)
+    @test isempty(data["pauli_qubits"])
+    @test isempty(data["magic_qubits"])
+    @test isempty(data["measurement_results"])
+    rm(path)
 end
 
 end
