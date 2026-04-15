@@ -117,13 +117,24 @@ abstract type QuantumRuntime end
 """TODO docstring -- all measurements return `nothing` and classically-trackable states are set as if result was `false`."""
 struct MockRuntime <: QuantumRuntime end
 ##
-_result_type_str(::ClassicalDetermRes) = "ClassicalDeterministic"
-_result_type_str(::ClassicalRandomRes) = "ClassicalRandom"
-_result_type_str(::QuantumRes) = "Quantum"
-_result_type_str(x) = string(x)
+function _result_type_str(t)
+    t == ClassicalDetermRes() && return "ClassicalDeterministic"
+    t == ClassicalRandomRes() && return "ClassicalRandom"
+    t == QuantumRes()         && return "Quantum"
+    return string(t)
+end
 
 _bool_str(::Nothing) = "nothing"
 _bool_str(b::Bool) = string(b)
+
+function _magic_pauli_str(p::PauliOperator, magic_qubits::Vector{Int})
+    phase_char = p.phase[] in (0x00, 0x01) ? '+' : '-'
+    chars = map(magic_qubits) do i
+        x, z = p[i]
+        x && z ? 'Y' : x ? 'X' : z ? 'Z' : '_'
+    end
+    return string(phase_char, String(chars))
+end
 
 """
     show(io, result::ComputerState)
@@ -142,6 +153,12 @@ function Base.show(io::IO, result::ComputerState)
         println(io, "    [$i] ", m.pauli,
                     "  →  ", _bool_str(m.result),
                     "  (", _result_type_str(m.result_type), ")")
+    end
+    quantum = filter(m -> m.result_type == QuantumRes(), ms.measurement_results)
+    println(io, "  Quantum Measurement Results ($(length(quantum))):")
+    for (i, m) in enumerate(quantum)
+        println(io, "    [$i] ", _magic_pauli_str(m.pauli, ms.magic_qubits),
+                    "  →  ", _bool_str(m.result))
     end
     print(io, "  Stabilizer Group:\n")
     show(io, ms.StabilizerGroup)
