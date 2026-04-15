@@ -1,11 +1,13 @@
 @testitem "io" tags=[:io] begin
 
 # test_parse.jl — unit tests for parse_input
-using PBCCompiler: Circuit, CircuitOp, Measurement, ExpHalfPiPauli, ExpQuatPiPauli, ExpEighPiPauli, PauliConditional
-using Moshi.Data: isa_variant
-using QuantumClifford: @P_str
-using PBCCompiler: parse_input, save
 using JLD2
+using PBCCompiler: Circuit, CircuitOp, Measurement, ExpHalfPiPauli, ExpQuatPiPauli, ExpEighPiPauli, PauliConditional
+using PBCCompiler: MeasurementResultType, MeasurementResult, classical_deterministic_result, classical_random_result, quantum_result, MemoryState, ComputerState
+using .MeasurementResultType: ClassicalDetermRes, ClassicalRandomRes, QuantumRes
+using Moshi.Data: isa_variant
+using QuantumClifford: @P_str, Stabilizer
+using PBCCompiler: parse_input, save
 """
     with_qasm(f, gates)
 
