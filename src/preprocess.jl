@@ -159,7 +159,7 @@ function remove_nonclifford(circuit::Circuit)
     num_magic_state=0
     for i in 1:num_non_clifford
         index=find_nonclifford_indices(circuit)[1]
-        num_magic_state=+1
+        num_magic_state+=1
         gadgetize(circuit, index, num_input_qubit, num_magic_state)
     end
 end
