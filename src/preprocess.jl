@@ -12,19 +12,23 @@ struct PauliQubitMismatchError <: Exception
 end
 
 function validate_CircuitOp(op::CircuitOp.Type)
-    p=affectedpaulis(op)
-    q=affectedqubits(op)
-    name=variant_name(op)
-    if length(p) != length(q)
-        throw(PauliQubitMismatchError("$name($p, $q): The length of the Pauli string is not the same as the number of affected qubits. Please check the input operation."))
-    end
     @match op begin
         CircuitOp.PauliConditional(cp, cq, tp, tq) => begin
             if cq == Int64[] || tq == Int64[]
                 throw(PauliQubitMismatchError("$name($p, $q): Pauli String can't be empty"))
+            else
+                validate_CircuitOp(ExpQuatPiPauli(cp, cq))
+                validate_CircuitOp(ExpQuatPiPauli(tp, tq))
             end
         end
-        _ => nothing
+        _ => begin
+            p=affectedpaulis(op)
+            q=affectedqubits(op)
+            name=variant_name(op)
+            if length(p) != length(q)
+                throw(PauliQubitMismatchError("$name($p, $q): The length of the Pauli string is not the same as the number of affected qubits. Please check the input operation."))
+            end
+        end
     end
 end
 
