@@ -79,7 +79,7 @@ end
 
 function gadgetize(circuit::Circuit, index::Int, num_input_qubit::Int, num_magic_state::Int)
     op=circuit[index]
-    num_bit=get_bit_number(circuit)
+    num_bit=num_input_qubit
     if isa_variant(op,CircuitOp.ExpEighPiPauli)
         P=affectedpaulis(op)
         Q=affectedqubits(op)
