@@ -8,17 +8,19 @@ function preprocess_circuit(circuit::Circuit)
 end
 
 
-function get_CompState(circuit::Circuit, input_state::Stabilizer)
+function get_CompState(circuit::Circuit, input_state::Stabilizer, dummy::Bool=false)
     num_pauli_qubits=get_circuit_width(circuit)
     PauliQubits=Int[1:num_pauli_qubits;]
     preprocess_circuit(circuit)
     MagicQubits=Int[num_pauli_qubits+1: get_circuit_width(circuit);]
+    num_magic=length(MagicQubits)
+    MagicState = num_magic==0 ? nothing : create_magic_state(num_magic)
     num_bits=get_bit_number(circuit)
     MeasRes=Vector{MeasurementResult}(undef, num_bits)
     creg=Array{Union{Nothing, Bool}}(nothing, num_bits)
     Stabilzier_Group=make_stabilizer_list(input_state, circuit)
-    MS=MemoryState(PauliQubits, MagicQubits, MeasRes, Stabilzier_Group, creg)
-    CS=ComputerState(circuit, 1, MS)
+    MS=MemoryState(PauliQubits, MagicQubits, MeasRes, Stabilzier_Group, MagicState, creg)
+    CS=ComputerState(circuit, 1, MS, dummy)
     return CS
 end
 
@@ -28,12 +30,13 @@ function do_quantum_step(compstate::ComputerState, runtime::Type{<:QuantumRuntim
     circuit=compstate.circuit
     i=compstate.instruction_pointer
     MS=compstate.memory_state
+    Dummy=compstate.dummy
     @debug("Now working with $i th measurement")
     Meas_List = find_measurement_indices(circuit)
     Meas_i=circuit[Meas_List[i]]
     bit_index=Meas_i.bit
     CheckList=MS.StabilizerGroup
-    (MR,j)=get_measurement_result(CheckList, Meas_i, get_circuit_width(circuit))
+    (MR,j)=get_measurement_result(compstate, Meas_i)
     MS.measurement_results[i]=MR
     MS.classical_register[bit_index]=MR.result
     @match MR.result_type begin
@@ -43,7 +46,7 @@ function do_quantum_step(compstate::ComputerState, runtime::Type{<:QuantumRuntim
             paulistring=embed(size(MS.StabilizerGroup)[2], Meas_i.qubits, Meas_i.pauli)
             a_stabilizer= Stabilizer([paulistring])
             StabilizerGroup=vcat(MS.StabilizerGroup,a_stabilizer)
-            MS=MemoryState(MS.pauli_qubits, MS.magic_qubits, MS.measurement_results, StabilizerGroup, MS.classical_register)
+            MS=MemoryState(MS.pauli_qubits, MS.magic_qubits, MS.measurement_results, StabilizerGroup,MS.quantum_memory, MS.classical_register)
         end
         ClassicalRandomRes() => begin
             @debug("This measurement outputs Classical Random Result")
@@ -56,7 +59,7 @@ function do_quantum_step(compstate::ComputerState, runtime::Type{<:QuantumRuntim
         end
     end
     i=i+1
-    return ComputerState(circuit, i, MS)
+    return ComputerState(circuit, i, MS, Dummy)
 end
 
 """TODO docstring"""
@@ -87,5 +90,5 @@ function run(input_circuit::Circuit, input_state::Stabilizer)
         new_op=CircuitOp.Measurement(pauli,op.bit,op.qubits)
         push!(circuit,new_op)
     end
-    return ComputerState(circuit, CS.instruction_pointer, CS.memory_state)
+    return ComputerState(circuit, CS.instruction_pointer, CS.memory_state, CS.dummy)
 end

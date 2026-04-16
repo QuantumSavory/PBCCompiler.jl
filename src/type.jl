@@ -1,4 +1,4 @@
-using QuantumClifford: PauliOperator, @P_str, Stabilizer
+using QuantumClifford: PauliOperator, @P_str, Stabilizer, GeneralizedStabilizer
 using Moshi.Data: @data
 ##
 """TODO docstring"""
@@ -96,6 +96,8 @@ struct MemoryState
     measurement_results::Vector{MeasurementResult}
     """Stabilizer object that describes current quantum state"""
     StabilizerGroup::Stabilizer
+    """GeneralizedStabilizer object holding current quantum state within quantum computer"""
+    quantum_memory::Union{GeneralizedStabilizer, Nothing}
     """Vector that holds all classical bits storing corresponding measurement results"""
     classical_register::Vector{Union{Nothing,Bool}}
 end
@@ -109,6 +111,8 @@ struct ComputerState
     instruction_pointer::Int
     """Contain current quantum state"""
     memory_state::MemoryState
+    """Dummy Simulator flag. Default to fault, using QuantumClifford for simulation"""
+    dummy::Bool
 end
 ##
 """TODO docstring"""

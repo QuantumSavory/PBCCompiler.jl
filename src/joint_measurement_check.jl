@@ -2,7 +2,7 @@
 Helper functions to check the first PPM in circuit, determine MeasurementResultType: ClassicalDetermRes, ClassicalRandomRes, QuantumRes
 """
 ##
-using QuantumClifford: project!, Stabilizer
+using QuantumClifford: project!, Stabilizer, one, GeneralizedStabilizer, tensor_pow, apply!, pcT, projectrand!
 using Moshi.Data: variant_name, isa_variant
 ##
 
@@ -24,6 +24,27 @@ function find_BitConditional_indices(circuit::Circuit)
     return BitConditional_indices
 end
 
+function create_hadamard_basis_state(num_qubit::Int)
+    n = num_qubit
+
+    generators = one(Stabilizer, n; basis=:X)
+
+    return Stabilizer(generators)
+end
+
+function create_magic_state(num_magic::Int)
+    n=num_magic
+
+    generators = GeneralizedStabilizer(create_hadamard_basis_state(n))
+
+    T = tensor_pow(pcT,n)
+
+    apply!(generators,T)
+
+    return generators
+
+end
+
 function check_PPM(s::Stabilizer,op::CircuitOp.Type, num_qubits::Int)
     if !isa_variant(op,CircuitOp.Measurement)
         return nothing
@@ -40,7 +61,13 @@ end
 false denotes +1 eigenvalue, true denotes -1 eigenvalue
 """
 
-function get_measurement_result(s::Stabilizer, op::CircuitOp.Type, num_qubits::Int)
+function get_measurement_result(compstate::ComputerState, op::CircuitOp.Type)
+    dummy=compstate.dummy
+    ms=compstate.memory_state
+    s=ms.StabilizerGroup
+    num_qubits = get_circuit_width(compstate.circuit)
+    MagicQubits = ms.magic_qubits
+    quantum_state = ms.quantum_memory
     len=length(s)
     projection = check_PPM(s, op, num_qubits)
     if projection === nothing
@@ -51,8 +78,9 @@ function get_measurement_result(s::Stabilizer, op::CircuitOp.Type, num_qubits::I
                 result = rand(Bool[0,1])
                 return (classical_random_result(op.pauli, result),projection[2])
             else
-                result = Bool(quantum_measurement(op)>>1)
-                return (quantum_result(op.pauli, result),projection[2])
+                real_p=op.pauli[MagicQubits]
+                (quantum_state, result) = quantum_measurement(quantum_state, real_p, dummy)
+                return (quantum_result(op.pauli, Bool(result>>1)),projection[2])
             end
         else
             result = Bool(projection[3]>>1)
@@ -61,19 +89,11 @@ function get_measurement_result(s::Stabilizer, op::CircuitOp.Type, num_qubits::I
     end
 end
 
-function quantum_measurement(op::CircuitOp.Type)
-    print("Enter quantum measurement result: ")
-    measurement_result = parse(Int,readline())
-    if abs(measurement_result) != 1
-        throw(ArgumentError("Measurement Result can only be +1 or -1!!!"))
+function quantum_measurement(sm::GeneralizedStabilizer, p::PauliOperator, dummy::Bool)
+    if dummy
+        return +1
     else
-        if measurement_result == 1
-            return 0x00
-        elseif measurement_result == -1
-            return 0x02
-        else
-            return nothing
-        end
+        return projectrand!(sm,p)
     end
 end
 

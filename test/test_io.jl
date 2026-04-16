@@ -180,10 +180,11 @@ function _make_state(;
                          quantum_result(P"YI", nothing),
                      ],
     stab           = Stabilizer([P"XX", P"ZZ"]),
+    quantum_memory = nothing,
     classical_reg  = Union{Nothing,Bool}[true, false, nothing],
 )
-    ms = MemoryState(pauli_qubits, magic_qubits, meas_results, stab, classical_reg)
-    return ComputerState(Circuit(), 1, ms)
+    ms = MemoryState(pauli_qubits, magic_qubits, meas_results, stab, quantum_memory, classical_reg)
+    return ComputerState(Circuit(), 1, ms, false)
 end
 
 # ---------------------------------------------------------------------------
