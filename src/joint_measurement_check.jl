@@ -62,12 +62,14 @@ false denotes +1 eigenvalue, true denotes -1 eigenvalue
 """
 
 function get_measurement_result(compstate::ComputerState, op::CircuitOp.Type)
+    @debug "Measuring" op _group=:api
     dummy=compstate.dummy
     ms=compstate.memory_state
     s=ms.StabilizerGroup
     num_qubits = get_circuit_width(compstate.circuit)
     MagicQubits = ms.magic_qubits
     quantum_state = ms.quantum_memory
+    @debug "Current quantum memory holds" quantum_state _group=:api
     len=length(s)
     projection = check_PPM(s, op, num_qubits)
     if projection === nothing
@@ -78,9 +80,13 @@ function get_measurement_result(compstate::ComputerState, op::CircuitOp.Type)
                 result = rand(Bool[0,1])
                 return (classical_random_result(op.pauli, result),projection[2])
             else
-                real_p=op.pauli[MagicQubits]
-                (quantum_state, result) = quantum_measurement(quantum_state, real_p, dummy)
-                return (quantum_result(op.pauli, Bool(result>>1)),projection[2])
+                if quantum_state === nothing
+                    print(compstate.circuit)
+                else
+                    real_p=op.pauli[MagicQubits]
+                    (quantum_state, result) = quantum_measurement(quantum_state, real_p, dummy)
+                    return (quantum_result(op.pauli, Bool(result>>1)),projection[2],quantum_state)
+                end
             end
         else
             result = Bool(projection[3]>>1)
