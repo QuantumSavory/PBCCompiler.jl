@@ -1,12 +1,13 @@
 using QuantumClifford: PauliOperator, @P_str, Stabilizer, GeneralizedStabilizer
 using Moshi.Data: @data
+using Moshi.Derive: @derive
 ##
 """TODO docstring"""
 const P = typeof(P"XYZ")
 
 """TODO docstring"""
 @data CircuitOp begin
-    """TODO docstring"""
+    """Measurement of pauli string P (ie., + XY) on qubits in vector at field "qubits" (ie.,[1,3]), measurement result is stored in classical bit denoted in "bit" """
     struct Measurement
         pauli::P
         bit::Int
@@ -17,17 +18,17 @@ const P = typeof(P"XYZ")
         pauli::P
         qubits::Vector{Int}
     end
-    """TODO docstring"""
+    """Perform Pauli Product Rotation(PPR) in the form of Pφ = exp(−iP φ), where P is pauli string, φ is an angle Perform pi/2 PPR on qubits denoted in Vector qubits"""
     struct ExpHalfPiPauli
         pauli::P
         qubits::Vector{Int}
     end
-    """TODO docstring"""
+    """Perform pi/4 PPR on qubits denoted in Vector qubits"""
     struct ExpQuatPiPauli
         pauli::P
         qubits::Vector{Int}
     end
-    """TODO docstring"""
+    """Perform pi/8 PPR on qubits denoted in Vector qubits"""
     struct ExpEighPiPauli
         pauli::P
         qubits::Vector{Int}
@@ -37,7 +38,7 @@ const P = typeof(P"XYZ")
         qubit::Int
         qubits::Vector{Int}
     end
-    """TODO docstring"""
+    """Perform a (pi/2) Pauli rotation (defined by target_pauli) on the target qubits, conditional on the control qubits falling into the -1 eigenspace of control_pauli"""
     struct PauliConditional
         control_pauli::P
         control_qubits::Vector{Int}
@@ -50,6 +51,8 @@ const P = typeof(P"XYZ")
         bit::Int
     end
 end
+
+@derive CircuitOp[Hash, Eq, Show]
 
 """TODO docstring"""
 const Circuit = Vector{CircuitOp.Type}
@@ -77,6 +80,8 @@ struct MeasurementResult
     """Measurement result type of this result (ClassicalDetermRes, ClassicalRandomRes, QuantumRes)"""
     result_type::MeasurementResultType.Type
 end
+
+@derive MeasurementResultType[Hash, Eq, Show]
 
 """TODO docstring"""
 classical_deterministic_result(p::PauliOperator, m::Union{Bool,Nothing}) = MeasurementResult(p, m, ClassicalDetermRes())
@@ -151,18 +156,31 @@ function Base.show(io::IO, result::ComputerState)
     println(io, "ComputerState")
     println(io, "  Pauli Qubits:    ", ms.pauli_qubits)
     println(io, "  Magic Qubits:    ", ms.magic_qubits)
-    n = length(ms.measurement_results)
-    println(io, "  Measurements ($n):")
-    for (i, m) in enumerate(ms.measurement_results)
-        println(io, "    [$i] ", m.pauli,
-                    "  →  ", _bool_str(m.result),
-                    "  (", _result_type_str(m.result_type), ")")
-    end
-    quantum = filter(m -> m.result_type == QuantumRes(), ms.measurement_results)
-    println(io, "  Quantum Measurement Results ($(length(quantum))):")
-    for (i, m) in enumerate(quantum)
-        println(io, "    [$i] ", _magic_pauli_str(m.pauli, ms.magic_qubits),
-                    "  →  ", _bool_str(m.result))
+    if !isdefined(ms, :measurement_results)
+        println(io, "  Measurements: undefined")
+        println(io, "  Quantum Measurement Results: undefined")
+    else
+        n = length(ms.measurement_results)
+        println(io, "  Measurements ($n):")
+        for i in 1:n
+            if !isassigned(ms.measurement_results, i)
+                println(io, "    [$i] undefined")
+                continue
+            end
+            m = ms.measurement_results[i]
+            println(io, "    [$i] ", m.pauli,
+                        "  →  ", _bool_str(m.result),
+                        "  (", _result_type_str(m.result_type), ")")
+        end
+        quantum = filter(i -> isassigned(ms.measurement_results, i) &&
+                              ms.measurement_results[i].result_type == QuantumRes(),
+                         1:n)
+        println(io, "  Quantum Measurement Results ($(length(quantum))):")
+        for (j, i) in enumerate(quantum)
+            m = ms.measurement_results[i]
+            println(io, "    [$j] ", _magic_pauli_str(m.pauli, ms.magic_qubits),
+                        "  →  ", _bool_str(m.result))
+        end
     end
     print(io, "  Stabilizer Group:\n")
     show(io, ms.StabilizerGroup)
