@@ -17,7 +17,7 @@ function get_CompState(circuit::Circuit, input_state::Stabilizer, dummy::Bool=fa
     MagicQubits=Int[num_pauli_qubits+1: get_circuit_width(circuit);]
     num_magic=length(MagicQubits)
     @debug "Number of Magic qubits" num_magic _group=:api
-    MagicState = num_magic==0 ? nothing : create_magic_state(num_magic)
+    MagicState = num_magic==0 ? nothing : _create_magic_state(num_magic)
     num_bits=get_bit_number(circuit)
     MeasRes=Vector{MeasurementResult}(undef, num_bits)
     creg=Array{Union{Nothing, Bool}}(nothing, num_bits)
@@ -41,7 +41,7 @@ function do_quantum_step(compstate::ComputerState, runtime::Type{<:QuantumRuntim
     Meas_i=circuit[Meas_List[i]]
     bit_index=Meas_i.bit
     CheckList=MS.StabilizerGroup
-    res=get_measurement_result(compstate, Meas_i)
+    res=_get_measurement_result(compstate, Meas_i)
     MR=res[1]
     j=res[2]
     MS.measurement_results[i]=MR
@@ -89,7 +89,7 @@ function run(input_circuit::Circuit, input_state::Stabilizer)
     while true && !isempty(CS.circuit)
         @debug "Working on $(CS.instruction_pointer) th PPM" _group=:api
         # run next_quantum_step and do_quantum_step until there is no next step
-        resolve_conditionals(CS)
+        _resolve_conditionals(CS)
         @debug "After BitConditional resolved, the circuit becomes: \n$(join(CS.circuit, "\n"))" _group=:api
         CS=do_quantum_step(CS)
         @debug "Performed $(CS.instruction_pointer) th PPM" _group=:api
