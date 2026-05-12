@@ -45,7 +45,11 @@ function _create_magic_state(num_magic::Int)
 
 end
 
-"""Perform Commutativity/Dependencies Check on Pauli Product Measurement with Stabilizer list"""
+"""
+Function that performs commutation and depedency checks on Pauli Product Measurement according to stabilizer list
+Return (Stabilizer, anti-commuting stabilizer index, measurement result in UInt8 (nothing if can't be determined))
+In the case that PPM is commuting and independent, second field will return index = length(Stabilizer)+1, third field nothing
+"""
 function _check_PPM(s::Stabilizer,op::CircuitOp.Type, num_qubits::Int)
     if !isa_variant(op,CircuitOp.Measurement)
         return nothing
@@ -66,12 +70,12 @@ false denotes +1 eigenvalue, true denotes -1 eigenvalue
 Perform Joint Measurement on CircuitOp if it's a CircuitOp.Measurement
 Store results as corresponding measurement type: classical_random_result, classical_deterministic_result, quantum_result
 """
-function _get_measurement_result(compstate::ComputerState, op::CircuitOp.Type)
+function get_measurement_result(compstate::ComputerState, op::CircuitOp.Type)
     @debug "Measuring" op _group=:api
     dummy=compstate.dummy
     ms=compstate.memory_state
     s=ms.StabilizerGroup
-    num_qubits = get_circuit_width(compstate.circuit)
+    num_qubits = _get_circuit_width(compstate.circuit)
     MagicQubits = ms.magic_qubits
     quantum_state = ms.quantum_memory
     @debug "Current quantum memory holds" quantum_state _group=:api
@@ -85,11 +89,13 @@ function _get_measurement_result(compstate::ComputerState, op::CircuitOp.Type)
                 result = rand(Bool[0,1])
                 return (classical_random_result(op.pauli, result),projection[2])
             else
-                if quantum_state === nothing
-                    print(compstate.circuit)
+                if dummy
+                    return (quantum_result(op.pauli, false),projection[2],quantum_state)
+                elseif  quantum_state === nothing
+                    throw(ArgumentError("Magic State not initiated"))
                 else
                     real_p=op.pauli[MagicQubits]
-                    (quantum_state, result) = _quantum_measurement(quantum_state, real_p, dummy)
+                    (quantum_state, result) = projectrand!(quantum_state, real_p)
                     return (quantum_result(op.pauli, Bool(result>>1)),projection[2],quantum_state)
                 end
             end
@@ -97,14 +103,6 @@ function _get_measurement_result(compstate::ComputerState, op::CircuitOp.Type)
             result = Bool(projection[3]>>1)
             return (classical_deterministic_result(op.pauli, result),projection[2])
         end
-    end
-end
-
-function _quantum_measurement(sm::GeneralizedStabilizer, p::PauliOperator, dummy::Bool)
-    if dummy
-        return +1
-    else
-        return projectrand!(sm,p)
     end
 end
 
@@ -116,7 +114,7 @@ function _resolve_conditionals(compstate::ComputerState)
     creg=MS.classical_register
     index=_find_BitConditional_indices(circuit)
     for i in index
-        @debug("Start resolving BitConditional at $i")
+        @debug("Start resoving BitConditional at $i")
         operation=circuit[i]
         control_bit=creg[operation.bit]
         if control_bit !== nothing
