@@ -30,7 +30,7 @@ function generate_random_circuit(num_ops::Int, num_qubits::Int)::Circuit
         end
     end
 
-    ops = CircuitOp.Type[]
+    ops = Circuit([])
 
     for _ in 1:num_ops
         # When num_qubits == 1 there is no room to split for PauliConditional.
