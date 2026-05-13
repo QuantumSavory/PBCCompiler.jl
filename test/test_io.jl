@@ -44,9 +44,9 @@ end
         # H → three consecutive ExpQuatPiPauli: Z, X, Z
         @test length(c) == 3
         @test all(isa_variant(op, CircuitOp.ExpQuatPiPauli) for op in c)
-        @test c[1].pauli == P"Z" && c[1].qubits == [0]
-        @test c[2].pauli == P"X" && c[2].qubits == [0]
-        @test c[3].pauli == P"Z" && c[3].qubits == [0]
+        @test c[1].pauli == P"Z" && c[1].qubits == [1]
+        @test c[2].pauli == P"X" && c[2].qubits == [1]
+        @test c[3].pauli == P"Z" && c[3].qubits == [1]
     end
 end
 
@@ -55,7 +55,7 @@ end
         c = parse_input(path)
         @test length(c) == 1
         @test isa_variant(c[1], CircuitOp.ExpQuatPiPauli)
-        @test c[1].pauli == P"Z" && c[1].qubits == [1]
+        @test c[1].pauli == P"Z" && c[1].qubits == [2]
     end
 end
 
@@ -64,7 +64,7 @@ end
         c = parse_input(path)
         @test length(c) == 1
         @test isa_variant(c[1], CircuitOp.ExpQuatPiPauli)
-        @test c[1].pauli == -P"Z" && c[1].qubits == [0]
+        @test c[1].pauli == -P"Z" && c[1].qubits == [1]
     end
 end
 
@@ -73,7 +73,7 @@ end
         c = parse_input(path)
         @test length(c) == 1
         @test isa_variant(c[1], CircuitOp.ExpEighPiPauli)
-        @test c[1].pauli == P"Z" && c[1].qubits == [2]
+        @test c[1].pauli == P"Z" && c[1].qubits == [3]
     end
 end
 
@@ -82,7 +82,7 @@ end
         c = parse_input(path)
         @test length(c) == 1
         @test isa_variant(c[1], CircuitOp.ExpEighPiPauli)
-        @test c[1].pauli == -P"Z" && c[1].qubits == [1]
+        @test c[1].pauli == -P"Z" && c[1].qubits == [2]
     end
 end
 
@@ -91,7 +91,7 @@ end
         c = parse_input(path)
         @test length(c) == 1
         @test isa_variant(c[1], CircuitOp.ExpHalfPiPauli)
-        @test c[1].pauli == P"X" && c[1].qubits == [0]
+        @test c[1].pauli == P"X" && c[1].qubits == [1]
     end
 end
 
@@ -100,7 +100,7 @@ end
         c = parse_input(path)
         @test length(c) == 1
         @test isa_variant(c[1], CircuitOp.ExpHalfPiPauli)
-        @test c[1].pauli == P"Y" && c[1].qubits == [0]
+        @test c[1].pauli == P"Y" && c[1].qubits == [1]
     end
 end
 
@@ -109,7 +109,7 @@ end
         c = parse_input(path)
         @test length(c) == 1
         @test isa_variant(c[1], CircuitOp.ExpHalfPiPauli)
-        @test c[1].pauli == P"Z" && c[1].qubits == [0]
+        @test c[1].pauli == P"Z" && c[1].qubits == [1]
     end
 end
 
@@ -118,8 +118,8 @@ end
         c = parse_input(path)
         @test length(c) == 1
         @test isa_variant(c[1], CircuitOp.PauliConditional)
-        @test c[1].control_pauli  == P"Z"  && c[1].control_qubits == [0]
-        @test c[1].target_pauli   == P"X"  && c[1].target_qubits  == [1]
+        @test c[1].control_pauli  == P"Z"  && c[1].control_qubits == [1]
+        @test c[1].target_pauli   == P"X"  && c[1].target_qubits  == [2]
     end
 end
 
@@ -129,8 +129,8 @@ end
         @test length(c) == 1
         @test isa_variant(c[1], CircuitOp.Measurement)
         @test c[1].pauli  == P"Z"
-        @test c[1].qubits == [2]
-        @test c[1].bit    == 1
+        @test c[1].qubits == [3]
+        @test c[1].bit    == 2
     end
 end
 
@@ -163,8 +163,8 @@ end
     @test length(measure_ops) == 2
     # Measurements are in Z basis on qubits 0 and 1
     @test all(op.pauli == P"Z" for op in measure_ops)
-    @test measure_ops[1].qubits == [0] && measure_ops[1].bit == 0
-    @test measure_ops[2].qubits == [1] && measure_ops[2].bit == 1
+    @test measure_ops[1].qubits == [1] && measure_ops[1].bit == 1
+    @test measure_ops[2].qubits == [2] && measure_ops[2].bit == 2
 end
 
 ##
