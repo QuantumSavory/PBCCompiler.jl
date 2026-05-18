@@ -2,7 +2,7 @@ module PBCCompilerMakieExt
 
 using Makie
 using PBCCompiler
-using PBCCompiler: Circuit, CircuitOp, _affectedqubits
+using PBCCompiler: Circuit, CircuitOp, affectedqubits
 using Moshi.Match: @match
 
 import PBCCompiler: circuitplot, circuitplot!, circuitplot_axis
@@ -91,7 +91,7 @@ function Makie.plot!(plot::CircuitPlot)
     end
 
     # Get all qubits in the circuit
-    all_qubits = _affectedqubits(circuit)
+    all_qubits = affectedqubits(circuit)
     if isempty(all_qubits)
         return plot
     end
@@ -119,7 +119,7 @@ function Makie.plot!(plot::CircuitPlot)
             continue
         end
 
-        qubits = _affectedqubits(op)
+        qubits = affectedqubits(op)
         if isempty(qubits)
             continue
         end
@@ -201,7 +201,7 @@ function circuitplot_axis(subfig, circuit::Circuit; kwargs...)
 
     # Set axis limits with padding
     if !isempty(circuit)
-        all_qubits = _affectedqubits(circuit)
+        all_qubits = affectedqubits(circuit)
         if !isempty(all_qubits)
             min_q = minimum(all_qubits)
             max_q = maximum(all_qubits)

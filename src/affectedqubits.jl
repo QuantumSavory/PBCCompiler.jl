@@ -18,7 +18,7 @@ op = PauliConditional(P"X", [1], P"Z", [3])
 affectedqubits(op)  # returns [1, 3]
 ```
 """
-function _affectedqubits(op::CircuitOp.Type)
+function affectedqubits(op::CircuitOp.Type)
     qubits = @match op begin
         CircuitOp.Measurement(pauli, bit, qubits) => qubits
         CircuitOp.Pauli(pauli, qubits) => qubits
@@ -27,7 +27,7 @@ function _affectedqubits(op::CircuitOp.Type)
         CircuitOp.ExpEighPiPauli(pauli, qubits) => qubits
         CircuitOp.PrepMagic(qubit, qubits) => vcat([qubit], qubits)
         CircuitOp.PauliConditional(cp, cq, tp, tq) => vcat(cq, tq)
-        CircuitOp.BitConditional(inner_op, bit) => _affectedqubits(inner_op)
+        CircuitOp.BitConditional(inner_op, bit) => affectedqubits(inner_op)
     end
     return sort(unique(qubits))
 end
@@ -37,8 +37,8 @@ end
 
 Return the sorted list of all qubit indices affected by any operation in the circuit.
 """
-function _affectedqubits(circuit::Circuit)
+function affectedqubits(circuit::Circuit)
     isempty(circuit) && return Int[]
-    all_qubits = reduce(vcat, _affectedqubits(op) for op in circuit)
+    all_qubits = reduce(vcat, affectedqubits(op) for op in circuit)
     return sort(unique(all_qubits))
 end

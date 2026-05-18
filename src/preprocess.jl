@@ -12,19 +12,19 @@ struct PauliQubitMismatchError <: Exception
 end
 
 """Function for checking if the pauli and qubits field denotes different number of qubits"""
-function _validate_CircuitOp(op::CircuitOp.Type)
+function validate_CircuitOp(op::CircuitOp.Type)
     @match op begin
         CircuitOp.PauliConditional(cp, cq, tp, tq) => begin
             if cq == Int64[] || tq == Int64[]
                 throw(PauliQubitMismatchError("$name($p, $q): Pauli String can't be empty"))
             else
-                _validate_CircuitOp(ExpQuatPiPauli(cp, cq))
-                _validate_CircuitOp(ExpQuatPiPauli(tp, tq))
+                validate_CircuitOp(ExpQuatPiPauli(cp, cq))
+                validate_CircuitOp(ExpQuatPiPauli(tp, tq))
             end
         end
         _ => begin
-            p=_affectedpaulis(op)
-            q=_affectedqubits(op)
+            p=affectedpaulis(op)
+            q=affectedqubits(op)
             name=variant_name(op)
             if length(p) != length(q)
                 throw(PauliQubitMismatchError("$name($p, $q): The length of the Pauli string is not the same as the number of affected qubits. Please check the input operation."))
@@ -34,21 +34,21 @@ function _validate_CircuitOp(op::CircuitOp.Type)
 end
 
 """Check every CircuitOp in a circuit"""
-function _validate_circuit(circuit::Circuit)
+function validate_circuit(circuit::Circuit)
     for op in circuit
-        _validate_CircuitOp(op)
+        validate_CircuitOp(op)
     end
 end
 
-function _get_circuit_width(circuit::Circuit)
+function get_circuit_width(circuit::Circuit)
     width=0
     for i in circuit
-        width=max(width,maximum(_affectedqubits(i)))
+        width=max(width,maximum(affectedqubits(i)))
     end
     return width
 end
 
-function _get_bit_number(circuit::Circuit)
+function get_bit_number(circuit::Circuit)
     num_bit=0
     for i in find_variant_indices(circuit,Measurement)
         bits = @match circuit[i] begin
@@ -65,18 +65,17 @@ function find_variant_indices(vec, ::Type{T}) where T
 end
 
 """
-Function that replace all non-Clifford circuit operations with BitConditional CircuitOps
+Function that replace a non-Clifford circuit operation with BitConditional CircuitOps
 Each BitConditional CircuitOp contains a gadget(a set of four consecutive CircuitOps) for pi/8 rotation implementation:
     Realize pi/8 rotation by consuming a |T ⟩ ancilla state
     perform a joint measurement P ⊗ Z between data and ancilla,
     then apply a conditional Clifford correction
 """
-function _gadgetize(circuit::Circuit, index::Int, num_input_qubit::Int, num_magic_state::Int)
-    op=circuit[index]
+function gadgetize(op::CircuitOp.Type, num_input_qubit::Int, num_magic_state::Int)
     num_bit=num_input_qubit
     if isa_variant(op,CircuitOp.ExpEighPiPauli)
-        P=_affectedpaulis(op)
-        Q=_affectedqubits(op)
+        P=affectedpaulis(op)
+        Q=affectedqubits(op)
         magic_state=[num_input_qubit+num_magic_state]
         Pauli=tensor(P,P"Z")
         Qubit=[Q;magic_state]
@@ -87,7 +86,7 @@ function _gadgetize(circuit::Circuit, index::Int, num_input_qubit::Int, num_magi
         BitConditional_1=CircuitOp.BitConditional(CircuitOp.ExpQuatPiPauli(P,Q),magic_bit_1)
         BitConditional_2=CircuitOp.BitConditional(CircuitOp.ExpHalfPiPauli(P,Q),magic_bit_2)
         gadget=[Measurement_1, Measurement_2, BitConditional_1, BitConditional_2]
-        splice!(circuit, index, gadget)
+        return gadget
     else
         nothing
     end
@@ -98,8 +97,8 @@ end
 s is the stabilized part of input_state defined by user in the form of a stabilzier group
 Function will expand the stabilizer group to cover the entire circuit width by adding Identities to each stabilizer
 """
-function _make_stabilizer_list(s::Stabilizer, circuit::Circuit)
-    paulilen=_get_circuit_width(circuit)
+function make_stabilizer_list(s::Stabilizer, circuit::Circuit)
+    paulilen=get_circuit_width(circuit)
     num_pauli_qubits = length(s)
     new_s=PauliOperator[]
     pauli_qubits = collect(1:num_pauli_qubits)
@@ -112,7 +111,7 @@ end
 
 ##
 """Reweite P1-controlled-P2 gates as C(P1, P2) = (P1 ⊗ P2)π/4 · (1 ⊗ P2)−π/4 · (P1 ⊗ 1)−π/4."""
-function _remove_pauliconditional(circuit::Circuit)
+function remove_pauliconditional(circuit::Circuit)
     indices=find_variant_indices(circuit,PauliConditional)
     for i in reverse(indices)
         op=circuit[i]
@@ -129,10 +128,10 @@ function _remove_pauliconditional(circuit::Circuit)
 end
 
 """TODO docstring"""
-function _group_nonclifford(circuit::Circuit)
+function group_nonclifford(circuit::Circuit)
     if find_variant_indices(circuit,ExpEighPiPauli) != []
         for index in find_variant_indices(circuit,ExpEighPiPauli)
-            circuit=traversal(circuit, conjugate, :left, 1, index-1)
+            circuit=traversal(circuit, conjugate_noncliff, :left, 1, index-1)
         end
     end
 end
@@ -140,32 +139,34 @@ end
 """Identifies and combines identical Pauli rotations:
     For example, two PPR (π/8) on the same Pauli operator P are merged into a single Clifford-level PPR (π/4).
     A rotation and its inverse, PPR (π/8) and PPR (−π/8), cancel each other out completely and are removed."""
-function _merge_ops(circuit::Circuit)
-    traversal(circuit,_merge_rotations, :left, 1, :end)
+function merge_ops(circuit::Circuit)
+    traversal(circuit,merge_rotations, :left, 1, :end)
 end
 
 """TODO docstring"""
-function _remove_clifford(circuit::Circuit)
-    _validate_circuit(circuit)
+function remove_clifford(circuit::Circuit)
+    validate_circuit(circuit)
     for index in find_variant_indices(circuit,Measurement)
-        circuit=traversal(circuit, conjugate, :left, 1, index-1)
+        circuit=traversal(circuit, conjugate_measurement, :left, 1, index-1)
     end
     return circuit
 end
 
 """TODO docstring"""
-function _remove_nonclifford(circuit::Circuit)
+function remove_nonclifford(circuit::Circuit)
     indices=find_variant_indices(circuit,ExpEighPiPauli)
-    num_input_qubit=_get_circuit_width(circuit)
+    num_input_qubit=get_circuit_width(circuit)
     num_magic_state=0
     for i in reverse(indices)
         num_magic_state+=1
-        _gadgetize(circuit, i, num_input_qubit, num_magic_state)
+        op=circuit[i]
+        gadget = gadgetize(op, num_input_qubit, num_magic_state)
+        splice!(circuit, i, gadget)
     end
 end
 
 """TODO docstring"""
-function _remove_post_measurement(circuit::Circuit)
+function remove_post_measurement(circuit::Circuit)
     # remove all gates after the last measurement
     index=maximum(find_variant_indices(circuit,Measurement))
     resize!(circuit, index)

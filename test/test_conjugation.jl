@@ -3,113 +3,97 @@
 using PBCCompiler
 using PBCCompiler: Circuit, CircuitOp, Measurement, ExpHalfPiPauli, ExpQuatPiPauli, ExpEighPiPauli, PauliConditional, BitConditional, affectedqubits
 using Test
-using PBCCompiler: conjugate
+using PBCCompiler: conjugate_noncliff, conjugate_measurement
 using QuantumClifford: @P_str
 using Moshi.Derive: @derive
 
 @derive CircuitOp[Eq, Show]
 
 @testset "Test unordered input" begin
-    op1=ExpQuatPiPauli(P"XY", [1, 3])
-    op2=ExpQuatPiPauli(P"ZXY", [3, 1, 2])
-    conjugated_op=ExpQuatPiPauli(P"-_YX", [1, 2, 3])
+    op1=CircuitOp.ExpQuatPiPauli(P"ZXY", [3, 1, 2])
+    op2=CircuitOp.ExpEighPiPauli(P"XY", [1,3])
+    M_Z=CircuitOp.Measurement(P"Z", 1, [2])
 
-    t_1=conjugate(op1,op2)
-    @test t_1 == (conjugated_op, op1)
+    conjugated_noncliff=CircuitOp.ExpEighPiPauli(P"_YX", [1, 2, 3])
+    conjugated_measurement=CircuitOp.Measurement(P"-XXZ", 1, [1, 2, 3])
 
+    t_1=conjugate_noncliff(op1,op2)
+    @test t_1 == (conjugated_noncliff, op1)
+
+    t_2=conjugate_measurement(op1,M_Z)
+    @test t_2 == (conjugated_measurement, op1)
 end
 
 @testset "Test non-overlapping input" begin
-    op1=ExpQuatPiPauli(P"X", [1])
-    op2=ExpQuatPiPauli(P"Z", [2])
-    conjugated_op=ExpQuatPiPauli(P"_Z", [1, 2])
+    op1=CircuitOp.ExpQuatPiPauli(P"X", [1])
+    op2=CircuitOp.ExpEighPiPauli(P"Z", [2])
+    M_Z=CircuitOp.Measurement(P"Z", 1, [2])
 
-    t_1=conjugate(op1,op2)
-    @test t_1 == (conjugated_op, op1)
+    conjugated_noncliff=CircuitOp.ExpEighPiPauli(P"_Z", [1, 2])
+    conjugated_measurement=CircuitOp.Measurement(P"_Z", 1, [1, 2])
 
+    t_1=conjugate_noncliff(op1,op2)
+    @test t_1 == (conjugated_noncliff, op1)
+
+    t_2=conjugate_measurement(op1,M_Z)
+    @test t_2 == (conjugated_measurement, op1)
 end
 
-@testset "Test on single qubit CircuitOps" begin
-    op1=ExpQuatPiPauli(P"X", [1])
-    op2=ExpEighPiPauli(P"Z", [1])
-    op3=ExpHalfPiPauli(P"Y", [1])
-    conjugated_op_1=ExpEighPiPauli(P"Y", [1])
-    conjugated_op_2=ExpHalfPiPauli(P"-Z", [1])
-    conjugated_op_3=ExpQuatPiPauli(P"-X", [1])
+@testset "Test on CircuitOp.ExpHalfPiPauli" begin
+    op1 = CircuitOp.ExpHalfPiPauli(P"YX", [1, 2])
+    op2=CircuitOp.ExpEighPiPauli(P"XY", [1,3])
+    M_Z=CircuitOp.Measurement(P"Z", 1, [2])
 
-    t_1=conjugate(op1,op2)
-    @test t_1 == (conjugated_op_1, op1)
-    t_2=conjugate(op1,op3)
-    @test t_2 == (conjugated_op_2, op1)
-    t_3=conjugate(op3,op1)
-    @test t_3 == (conjugated_op_3, op3)
+    conjugated_noncliff=ExpEighPiPauli(P"-X_Y", [1, 2, 3])
+    conjugated_measurement=CircuitOp.Measurement(P"-_Z", 1, [1, 2])
 
+    t_1=conjugate_noncliff(op1,op2)
+    @test t_1 == (conjugated_noncliff, op1)
+
+    t_2=conjugate_measurement(op1,M_Z)
+    @test t_2 == (conjugated_measurement, op1)
 end
 
-@testset "Test on PauliConditionals" begin
-    op1=ExpQuatPiPauli(P"X", [1])
-    op2=ExpQuatPiPauli(P"Z", [2])
+@testset "Test on unexpected inputs" begin
     CNOT=PauliConditional(P"Z", [1], P"X", [2])
-    conjugated_op_1=ExpQuatPiPauli(P"XX", [1, 2])
-    conjugated_op_2=ExpQuatPiPauli(P"ZZ", [1, 2])
-
-    t_1=conjugate(CNOT,op1)
-    @test t_1 == (conjugated_op_1, CNOT)
-
-    T_2=conjugate(CNOT,op2)
-    @test T_2 == (conjugated_op_2, CNOT)
-
-end
-
-@testset "Test on BitConditionals" begin
-    op1=ExpQuatPiPauli(P"X", [1])
     Con_Z=BitConditional(ExpHalfPiPauli(P"Z", [1]), 1)
+    clifford_op=CircuitOp.ExpQuatPiPauli(P"X", [1])
+    nonclifford_op=CircuitOp.ExpEighPiPauli(P"Z", [2])
+    M_Z=CircuitOp.Measurement(P"Z", 1, [2])
 
-    t_1=conjugate(Con_Z, op1)
+    t_1=conjugate_noncliff(CNOT,nonclifford_op)
     @test t_1 === nothing
 
-end
-
-@testset "Test on Measurements" begin
-    op1=ExpQuatPiPauli(P"X", [2])
-    op2=ExpHalfPiPauli(P"X", [2])
-    CNOT=PauliConditional(P"Z", [1], P"X", [2])
-    M_Z=Measurement(P"Z", 1, [2])
-    conjugated_op_1=Measurement(P"_Y", 1, [1, 2])
-    conjugated_op_2=Measurement(P"-_Z", 1, [1, 2])
-    conjugated_op_3=Measurement(P"ZZ", 1, [1, 2])
-
-    t_1=conjugate(M_Z, op1)
-    @test t_1 === nothing
-
-    t_2=conjugate(op1, M_Z)
-    @test t_2 == (conjugated_op_1, op1)
-
-    t_3=conjugate(op2, M_Z)
-    @test t_3 == (conjugated_op_2, op2)
-
-    t_4=conjugate(CNOT, M_Z)
-    @test t_4 == (conjugated_op_3, CNOT)
-end
-
-@testset "Test on BitConditional" begin
-    op1=ExpQuatPiPauli(P"X", [1])
-    Con_Z=BitConditional(ExpHalfPiPauli(P"Z", [1]), 1)
-
-    t_1=conjugate(Con_Z, op1)
-    @test t_1 === nothing
-end
-
-@testset "Test on Invalid Inputs" begin
-    op1=ExpQuatPiPauli(P"X", [1])
-    measZ=Measurement(P"Z", 1, [1])
-    measX=Measurement(P"X", 1, [1])
-
-    t_1=conjugate(measZ, op1)
-    @test t_1 === nothing
-
-    t_2=conjugate(measX, measZ)
+    t_2=conjugate_measurement(CNOT,M_Z)
     @test t_2 === nothing
+
+    t_3=conjugate_noncliff(Con_Z,nonclifford_op)
+    @test t_3 === nothing
+
+    t_4=conjugate_measurement(Con_Z,M_Z)
+    @test t_4 === nothing
+
+    t_5=conjugate_noncliff(M_Z,nonclifford_op)
+    @test t_5 === nothing
+
+    t_6=conjugate_measurement(nonclifford_op,M_Z)
+    @test t_6 === nothing
+
+    @test_throws ArgumentError conjugate_noncliff(clifford_op, M_Z)
+
+    @test_throws ArgumentError conjugate_measurement(clifford_op, nonclifford_op)
+
+    @test_throws ArgumentError conjugate_noncliff(clifford_op, CNOT)
+
+    @test_throws ArgumentError conjugate_noncliff(clifford_op, Con_Z)
+
+    @test_throws ArgumentError conjugate_noncliff(clifford_op, clifford_op)
+
+    @test_throws ArgumentError conjugate_measurement(clifford_op, CNOT)
+
+    @test_throws ArgumentError conjugate_measurement(clifford_op, Con_Z)
+
+    @test_throws ArgumentError conjugate_measurement(clifford_op, clifford_op)
 end
 
 end
