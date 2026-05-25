@@ -108,8 +108,6 @@ Save the first four fields of `result.memory_state` (`pauli_qubits`, `magic_qubi
 function save(result::ComputerState, filepath::String)
     ms = result.memory_state
     JLD2.jldsave(filepath;
-        pauli_qubits        = ms.pauli_qubits,
-        magic_qubits        = ms.magic_qubits,
         measurement_results = ms.measurement_results,
         StabilizerGroup     = ms.StabilizerGroup,
     )

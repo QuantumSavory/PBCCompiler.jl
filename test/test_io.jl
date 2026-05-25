@@ -172,8 +172,7 @@ end
 # Helper: construct a minimal ComputerState for testing
 # ---------------------------------------------------------------------------
 function _make_state(;
-    pauli_qubits   = [1, 2],
-    magic_qubits   = [3],
+    num_gadgets = 3,
     meas_results   = MeasurementResult[
                          classical_deterministic_result(P"XZ", true),
                          classical_random_result(P"ZX", false),
@@ -183,8 +182,8 @@ function _make_state(;
     quantum_memory = nothing,
     classical_reg  = Union{Nothing,Bool}[true, false, nothing],
 )
-    ms = MemoryState(pauli_qubits, magic_qubits, meas_results, stab, quantum_memory, classical_reg)
-    return ComputerState(Circuit(), 1, ms, false)
+    ms = MemoryState(meas_results, stab, quantum_memory, classical_reg)
+    return ComputerState(Circuit(),num_gadgets, 1, ms, false)
 end
 
 # ---------------------------------------------------------------------------
@@ -205,22 +204,10 @@ end
     path = tempname() * ".jld2"
     save(_make_state(), path)
     data = JLD2.load(path)
-    @test haskey(data, "pauli_qubits")
-    @test haskey(data, "magic_qubits")
+    @test !haskey(data, "num_gadgets")
     @test haskey(data, "measurement_results")
     @test haskey(data, "StabilizerGroup")
     @test !haskey(data, "classical_register")
-    rm(path)
-end
-
-# Tests that `pauli_qubits` and `magic_qubits` round-trip exactly through the
-# JLD2 file, including the non-default case of distinct index vectors.
-@testset "save round-trips pauli_qubits and magic_qubits" begin
-    path = tempname() * ".jld2"
-    save(_make_state(pauli_qubits=[1, 3, 5], magic_qubits=[2, 4]), path)
-    data = JLD2.load(path)
-    @test data["pauli_qubits"] == [1, 3, 5]
-    @test data["magic_qubits"] == [2, 4]
     rm(path)
 end
 
@@ -260,26 +247,6 @@ end
     @test length(loaded) == 2
     @test loaded[1] == P"XX"
     @test loaded[2] == P"ZZ"
-    rm(path)
-end
-
-# Tests edge-case behaviour when both `pauli_qubits` and `magic_qubits` are
-# empty vectors and there are no measurement results. The file must still be
-# created and all four keys must be present.
-@testset "save handles empty qubit and measurement vectors" begin
-    path = tempname() * ".jld2"
-    save(_make_state(
-        pauli_qubits  = Int[],
-        magic_qubits  = Int[],
-        meas_results  = MeasurementResult[],
-        stab          = Stabilizer([P"I"]),
-        classical_reg = Union{Nothing,Bool}[],
-    ), path)
-    data = JLD2.load(path)
-    @test isfile(path)
-    @test isempty(data["pauli_qubits"])
-    @test isempty(data["magic_qubits"])
-    @test isempty(data["measurement_results"])
     rm(path)
 end
 

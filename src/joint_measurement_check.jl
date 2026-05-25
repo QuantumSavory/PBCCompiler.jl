@@ -14,6 +14,16 @@ function validate_input(circuit::Circuit, input::Stabilizer)
     end
 end
 
+function find_BitConditional_indices(circuit::Circuit)
+    BitConditional_indices = []
+    for (index, op) in enumerate(circuit)
+        if isa_variant(op, CircuitOp.BitConditional)
+            push!(BitConditional_indices, index)
+        end
+    end
+    return BitConditional_indices
+end
+
 function create_hadamard_basis_state(num_qubit::Int)
     n = num_qubit
 
@@ -66,7 +76,7 @@ function get_measurement_result(compstate::ComputerState, op::CircuitOp.Type)
     ms=compstate.memory_state
     s=ms.StabilizerGroup
     num_qubits = get_circuit_width(compstate.circuit)
-    MagicQubits = ms.magic_qubits
+    magicqubits = collect(num_qubits-compstate.num_gadgets+1:num_qubits)
     quantum_state = ms.quantum_memory
     @debug "Current quantum memory holds" quantum_state _group=:api
     len=length(s)
@@ -84,7 +94,7 @@ function get_measurement_result(compstate::ComputerState, op::CircuitOp.Type)
                 elseif  quantum_state === nothing
                     throw(ArgumentError("Magic State not initiated"))
                 else
-                    real_p=op.pauli[MagicQubits]
+                    real_p=op.pauli[magicqubits]
                     (quantum_state, result) = projectrand!(quantum_state, real_p)
                     return (quantum_result(op.pauli, Bool(result>>1)),projection[2],quantum_state)
                 end
@@ -102,9 +112,9 @@ function resolve_conditionals(compstate::ComputerState)
     circuit=CS.circuit
     MS=CS.memory_state
     creg=MS.classical_register
-    index=find_variant_indices(circuit,BitConditional)
+    index=find_BitConditional_indices(circuit)
     for i in index
-        @debug("Start resolving BitConditional at $i")
+        @debug("Start resoving BitConditional at $i")
         operation=circuit[i]
         control_bit=creg[operation.bit]
         if control_bit !== nothing

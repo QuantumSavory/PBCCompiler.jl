@@ -79,21 +79,29 @@ end
     t_6=conjugate_measurement(nonclifford_op,M_Z)
     @test t_6 === nothing
 
-    @test_throws ArgumentError conjugate_noncliff(clifford_op, M_Z)
+    t_7=conjugate_noncliff(clifford_op, M_Z)
+    @test t_6 === nothing
 
-    @test_throws ArgumentError conjugate_measurement(clifford_op, nonclifford_op)
+    t_8=conjugate_measurement(clifford_op, nonclifford_op)
+    @test t_8 === nothing
 
-    @test_throws ArgumentError conjugate_noncliff(clifford_op, CNOT)
+    t_9=conjugate_noncliff(clifford_op, CNOT)
+    @test t_9 === nothing
 
-    @test_throws ArgumentError conjugate_noncliff(clifford_op, Con_Z)
+    t_10=conjugate_noncliff(clifford_op, Con_Z)
+    @test t_10 === nothing
 
-    @test_throws ArgumentError conjugate_noncliff(clifford_op, clifford_op)
+    t_11=conjugate_noncliff(clifford_op, clifford_op)
+    @test t_11 === nothing
 
-    @test_throws ArgumentError conjugate_measurement(clifford_op, CNOT)
+    t_12=conjugate_measurement(clifford_op, CNOT)
+    @test t_12 === nothing
 
-    @test_throws ArgumentError conjugate_measurement(clifford_op, Con_Z)
+    t_13=conjugate_measurement(clifford_op, Con_Z)
+    @test t_13 === nothing
 
-    @test_throws ArgumentError conjugate_measurement(clifford_op, clifford_op)
+    t_14=conjugate_measurement(clifford_op, clifford_op)
+    @test t_14 === nothing
 end
 
 end

@@ -3,7 +3,7 @@ using StatsBase: sample
 using QuantumClifford: random_pauli
 ##
 """
-    generate_random_circuit(num_ops::Int, num_qubits::Int) -> Circuit
+    random_test_circuit(num_ops::Int, num_qubits::Int) -> Circuit
 
 Generate a random circuit with `num_ops` gate operations followed by one
 measurement per qubit.
@@ -17,7 +17,7 @@ qubits 1..k are the control registers and qubits k+1..num_qubits are the
 target registers. Requires `num_qubits >= 2` to generate `PauliConditional`
 ops; if `num_qubits == 1` only the Exp* op types are used.
 """
-function generate_random_circuit(num_ops::Int, num_qubits::Int)::Circuit
+function random_test_circuit(num_ops::Int, num_qubits::Int)::Circuit
     qubits = collect(1:num_qubits)
 
     # Return a random non-identity PauliOperator of length n.

@@ -93,10 +93,6 @@ quantum_result(p::PauliOperator, m::Union{Bool,Nothing}) = MeasurementResult(p, 
 
 """Struct that contains information describing current quantum state"""
 struct MemoryState
-    """Vector that contains index of all data qubits that hold circuit input"""
-    pauli_qubits::Vector{Int}
-    """Vector that contains index of all qubits that hold magic states"""
-    magic_qubits::Vector{Int}
     """Vector that holds all MeasurementResult"""
     measurement_results::Vector{MeasurementResult}
     """Stabilizer object that describes current quantum state"""
@@ -112,6 +108,8 @@ end
 struct ComputerState
     """Contain current circuit object"""
     circuit::Circuit
+    """Number of gadgets inserted to replace nonclifford circuit operations"""
+    num_gadgets::Int
     """Denote the Pauli Product Measurement that is being processed"""
     instruction_pointer::Int
     """Contain current quantum state"""
@@ -152,10 +150,10 @@ Pretty-print the first four fields of `result.memory_state`:
 `pauli_qubits`, `magic_qubits`, `measurement_results`, and `StabilizerGroup`.
 """
 function Base.show(io::IO, result::ComputerState)
+    num_qubits = get_circuit_width(result.circuit)
+    magicqubits = collect(num_qubits-result.num_gadgets+1:num_qubits)
     ms = result.memory_state
     println(io, "ComputerState")
-    println(io, "  Pauli Qubits:    ", ms.pauli_qubits)
-    println(io, "  Magic Qubits:    ", ms.magic_qubits)
     if !isdefined(ms, :measurement_results)
         println(io, "  Measurements: undefined")
         println(io, "  Quantum Measurement Results: undefined")
@@ -178,7 +176,7 @@ function Base.show(io::IO, result::ComputerState)
         println(io, "  Quantum Measurement Results ($(length(quantum))):")
         for (j, i) in enumerate(quantum)
             m = ms.measurement_results[i]
-            println(io, "    [$j] ", _magic_pauli_str(m.pauli, ms.magic_qubits),
+            println(io, "    [$j] ", _magic_pauli_str(m.pauli, magicqubits),
                         "  →  ", _bool_str(m.result))
         end
     end
