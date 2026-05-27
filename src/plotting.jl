@@ -1,9 +1,8 @@
-"""
-Plotting scaffolding for circuit visualization.
 
-The actual implementation is provided by the PBCCompilerMakieExt extension
-when Makie is loaded.
-"""
+#Plotting scaffolding for circuit visualization.
+
+#The actual implementation is provided by the PBCCompilerMakieExt extension
+#when Makie is loaded.
 
 """
     circuitplot(circuit::Circuit)

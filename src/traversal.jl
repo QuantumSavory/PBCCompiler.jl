@@ -1,6 +1,5 @@
-"""
-Circuit traversal utilities for gate simplifications and transformations.
-"""
+
+#Circuit traversal utilities for gate simplifications and transformations.
 
 """
     traversal(circuit::Circuit, pair_transformation, direction=:right, starting_index=1, end_index=:end)
