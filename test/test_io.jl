@@ -183,7 +183,7 @@ function _make_state(;
     classical_reg  = Union{Nothing,Bool}[true, false, nothing],
 )
     ms = MemoryState(meas_results, stab, quantum_memory, classical_reg)
-    return ComputerState(Circuit(),num_gadgets, 1, ms, false)
+    return ComputerState(Circuit(),num_gadgets, 1, ms)
 end
 
 # ---------------------------------------------------------------------------
@@ -198,7 +198,7 @@ end
 end
 
 # Tests that the saved file contains exactly the four expected top-level keys
-# (`pauli_qubits`, `magic_qubits`, `measurement_results`, `StabilizerGroup`)
+# (`pauli_qubits`, `magic_qubits`, `measurement_results`, `stabilizer_group`)
 # and that `classical_register` — the fifth field of MemoryState — is absent.
 @testset "save writes correct keys" begin
     path = tempname() * ".jld2"
@@ -206,7 +206,7 @@ end
     data = JLD2.load(path)
     @test !haskey(data, "num_gadgets")
     @test haskey(data, "measurement_results")
-    @test haskey(data, "StabilizerGroup")
+    @test haskey(data, "stabilizer_group")
     @test !haskey(data, "classical_register")
     rm(path)
 end
@@ -235,14 +235,14 @@ end
     rm(path)
 end
 
-# Tests that the StabilizerGroup round-trips through the JLD2 file,
+# Tests that the stabilizer_group round-trips through the JLD2 file,
 # checking both the number of generators and their individual Pauli strings.
-@testset "save round-trips StabilizerGroup" begin
+@testset "save round-trips stabilizer_group" begin
     stab = Stabilizer([P"XX", P"ZZ"])
     path = tempname() * ".jld2"
     save(_make_state(stab=stab), path)
     data   = JLD2.load(path)
-    loaded = data["StabilizerGroup"]
+    loaded = data["stabilizer_group"]
 
     @test length(loaded) == 2
     @test loaded[1] == P"XX"

@@ -103,13 +103,13 @@ end
     save(result::ComputerState, filepath::String)
 
 Save the first four fields of `result.memory_state` (`pauli_qubits`, `magic_qubits`,
-`measurement_results`, `StabilizerGroup`) to a `.jld2` file at `filepath`.
+`measurement_results`, `stabilizer_group`) to a `.jld2` file at `filepath`.
 """
-function save(result::ComputerState, filepath::String)
+function save(result::S, filepath::String) where S <: AbstractSimState
     ms = result.memory_state
     JLD2.jldsave(filepath;
         measurement_results = ms.measurement_results,
-        StabilizerGroup     = ms.StabilizerGroup,
+        stabilizer_group     = ms.stabilizer_group,
     )
 end
 ##

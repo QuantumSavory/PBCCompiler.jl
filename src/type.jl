@@ -96,16 +96,18 @@ struct MemoryState
     """Vector that holds all MeasurementResult"""
     measurement_results::Vector{MeasurementResult}
     """Stabilizer object that describes current quantum state"""
-    StabilizerGroup::Stabilizer
+    stabilizer_group::Stabilizer
     """GeneralizedStabilizer object holding current quantum state within quantum computer"""
     quantum_memory::Union{GeneralizedStabilizer, Nothing}
     """Vector that holds all classical bits storing corresponding measurement results"""
     classical_register::Vector{Union{Nothing,Bool}}
 end
 
+"""Abstract base type for simulator execution states."""
+abstract type AbstractSimState end
 
-"""Struct that contains current state of compiler"""
-struct ComputerState
+"""Execution state for real backend simulation."""
+struct ComputerState <: AbstractSimState
     """Contain current circuit object"""
     circuit::Circuit
     """Number of gadgets inserted to replace nonclifford circuit operations"""
@@ -114,8 +116,20 @@ struct ComputerState
     instruction_pointer::Int
     """Contain current quantum state"""
     memory_state::MemoryState
-    """Dummy Simulator flag. Default to fault, using QuantumClifford for simulation"""
-    dummy::Bool
+end
+
+"""Execution state for dummy simulation. No real backend is contacted."""
+struct DummyState <: AbstractSimState
+    """Contain current circuit object"""
+    circuit::Circuit
+    """Number of gadgets inserted to replace nonclifford circuit operations"""
+    num_gadgets::Int
+    """Denote the Pauli Product Measurement that is being processed"""
+    instruction_pointer::Int
+    """Contain current quantum state"""
+    memory_state::MemoryState
+    """Weight vector describes sampling probability between +1 and -1 measurement results"""
+    outcome_probs::Vector{Int}
 end
 ##
 """TODO docstring"""
@@ -149,7 +163,7 @@ end
 Pretty-print the first four fields of `result.memory_state`:
 `pauli_qubits`, `magic_qubits`, `measurement_results`, and `StabilizerGroup`.
 """
-function Base.show(io::IO, result::ComputerState)
+function Base.show(io::IO, result::S) where S <: AbstractSimState
     num_qubits = get_circuit_width(result.circuit)
     magicqubits = collect(num_qubits-result.num_gadgets+1:num_qubits)
     ms = result.memory_state
@@ -181,5 +195,5 @@ function Base.show(io::IO, result::ComputerState)
         end
     end
     print(io, "  Stabilizer Group:\n")
-    show(io, ms.StabilizerGroup)
+    show(io, ms.stabilizer_group)
 end

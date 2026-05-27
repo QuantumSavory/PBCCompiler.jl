@@ -7,6 +7,7 @@ authors = ["Stefan Krastanov <stefan@krastanov.org>"]
 projects = ["benchmark", "docs"]
 
 [deps]
+Accessors = "7d9f7c33-5ae7-4f3b-8dc6-eff91059b697"
 JLD2 = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
 Moshi = "2e0e35c7-a2e4-4343-998d-7ef72827ed2d"
 QuantumClifford = "0525e862-1e90-11e9-3e4d-1b39d7109de1"
@@ -20,6 +21,7 @@ Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
 PBCCompilerMakieExt = "Makie"
 
 [compat]
+Accessors = "0.1.44"
 JLD2 = "0.6.4"
 Makie = "0.24"
 Moshi = "0.3"
