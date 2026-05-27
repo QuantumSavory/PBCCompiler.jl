@@ -1,6 +1,8 @@
 #This file contains the main logic for compute and compile input circuit into PBC Circuit
 using Accessors: @reset
 """
+    preprocess_circuit(circuit::Circuit) -> Circuit
+
 Process a Clifford + T circuit into a Pauli Product circuit by appropriately commuting
 all Clifford gates past the nonClifford-gates and absorbing them in the Pauli Product Measurements.
 Then replace all nonClifford Pauli Product Rotations with gadgets.
@@ -18,7 +20,7 @@ function preprocess_circuit(circuit::Circuit)
 end
 
 """
-    get_CompState(circuit::Circuit, input_state::Union{Stabilizer, Nothing}=nothing, dummy::Bool=false) -> AbstractSimState
+    get_CompState(circuit::Circuit, input_state::Union{Stabilizer, Nothing}=nothing, dummy::Bool=false) -> S where S <: AbstractSimState
 
 Get initial Execution State using input circuit and input state.
 
@@ -28,7 +30,7 @@ Get initial Execution State using input circuit and input state.
 - `dummy`: flag for running dummy simulation
 - `outcome_probs`: 2-element distribution vector [p_p1, p_m1]. p_p1 is the probability measuring +1; p_m1 is the probability measuring -1
 """
-function get_CompState(circuit::Circuit, input_state::Union{Stabilizer, Nothing}=nothing; dummy::Bool=false, outcome_probs::Vector{Int}=[1,1])
+function get_SimState(circuit::Circuit, input_state::Union{Stabilizer, Nothing}=nothing; dummy::Bool=false, outcome_probs::Vector{Int}=[1,1])
     validate_circuit(circuit)
     num_pauli_qubits=get_circuit_width(circuit)
     @debug "Initial number of qubits $num_pauli_qubits" _group=:api
@@ -50,11 +52,14 @@ function get_CompState(circuit::Circuit, input_state::Union{Stabilizer, Nothing}
     if dummy
         return DummyState(circuit, num_gadgets, 1, ms, outcome_probs)
     else
-        return ComputerState(circuit,num_gadgets, 1, ms)
+        return SimState(circuit,num_gadgets, 1, ms)
     end
 end
 
-"""Perform the next joint measurement and update ComputerState accordingly"""
+"""
+    do_quantum_step(state::S, runtime::Type{<:QuantumRuntime}=MockRuntime) -> S where S <: AbstractSimState
+Perform the next joint measurement and update ComputerState accordingly
+"""
 function do_quantum_step(state::S, runtime::Type{<:QuantumRuntime}=MockRuntime) where S <: AbstractSimState
     # run the quantum measurement, appropriately updating MemoryState
     circuit = state.circuit
@@ -96,9 +101,18 @@ function do_quantum_step(state::S, runtime::Type{<:QuantumRuntime}=MockRuntime) 
     @reset state.memory_state = ms
 end
 
-"""Run compute/compile with provided circuit and input state(described by stabilizer group)"""
+"""
+    run(input_circuit::Circuit, input_state::Union{Stabilizer, Nothing}=nothing; dummy::Bool=false, outcome_probs::Vector{Int}=[1,1]) -> S where S <: AbstractSimState
+
+Run compute/compile with provided circuit and input state(described by stabilizer group)
+# Fields
+- `circuit`: input circuit for compilation
+- `input_state`: initial qubit state
+- `dummy`: flag for running dummy simulation
+- `outcome_probs`: 2-element distribution vector [p_p1, p_m1]. p_p1 is the probability measuring +1; p_m1 is the probability measuring -1
+"""
 function run(input_circuit::Circuit, input_state::Union{Stabilizer, Nothing}=nothing; dummy::Bool=false, outcome_probs::Vector{Int}=[1,1])
-    state = get_CompState(input_circuit, input_state; dummy=dummy, outcome_probs=outcome_probs)
+    state = get_SimState(input_circuit, input_state; dummy=dummy, outcome_probs=outcome_probs)
     len=length(state.memory_state.classical_register)
     while true && !isempty(state.circuit)
         @debug "Working on $(state.instruction_pointer) th PPM" _group=:api

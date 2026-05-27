@@ -3,7 +3,7 @@
 # test_parse.jl — unit tests for parse_input
 using JLD2
 using PBCCompiler: Circuit, CircuitOp, Measurement, ExpHalfPiPauli, ExpQuatPiPauli, ExpEighPiPauli, PauliConditional
-using PBCCompiler: MeasurementResultType, MeasurementResult, classical_deterministic_result, classical_random_result, quantum_result, MemoryState, ComputerState
+using PBCCompiler: MeasurementResultType, MeasurementResult, classical_deterministic_result, classical_random_result, quantum_result, MemoryState, SimState
 using .MeasurementResultType: ClassicalDetermRes, ClassicalRandomRes, QuantumRes
 using Moshi.Data: isa_variant
 using QuantumClifford: @P_str, Stabilizer
@@ -169,7 +169,7 @@ end
 
 ##
 # ---------------------------------------------------------------------------
-# Helper: construct a minimal ComputerState for testing
+# Helper: construct a minimal SimState for testing
 # ---------------------------------------------------------------------------
 function _make_state(;
     num_gadgets = 3,
@@ -183,7 +183,7 @@ function _make_state(;
     classical_reg  = Union{Nothing,Bool}[true, false, nothing],
 )
     ms = MemoryState(meas_results, stab, quantum_memory, classical_reg)
-    return ComputerState(Circuit(),num_gadgets, 1, ms)
+    return SimState(Circuit(),num_gadgets, 1, ms)
 end
 
 # ---------------------------------------------------------------------------

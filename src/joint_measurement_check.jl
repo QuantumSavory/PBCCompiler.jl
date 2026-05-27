@@ -2,6 +2,7 @@
 ##
 using QuantumClifford: project!, Stabilizer, one, GeneralizedStabilizer, tensor_pow, apply!, pcT, projectrand!
 using Moshi.Data: variant_name, isa_variant
+using StatsBase
 ##
 
 function validate_input(circuit::Circuit, input::Stabilizer)
@@ -66,8 +67,14 @@ function check_PPM(s::Stabilizer,op::CircuitOp.Type, num_qubits::Int)
 end
 
 """
-Perform Joint Measurement on CircuitOp if it's a CircuitOp.Measurement
-Store results as corresponding measurement type: classical_random_result, classical_deterministic_result, quantum_result
+    get_measurement_result(state::S, op::CircuitOp.Type) where S <: AbstractSimState -> Tuple{MeasurementResult, Int64, GeneralizedStabilizer}
+
+Perform Joint Measurement on a CircuitOp.Measurement
+
+It returns
+- a MeasurementResult with corresponding MeasurementResultType
+- the index of the row where the non-commuting operator was (that row is now equal to pauli; its phase is not updated and for a faithful measurement simulation it needs to be randomized by the user)
+- a GeneralizedStabilizer represents the quantum state after measurement
 """
 function get_measurement_result(state::S, op::CircuitOp.Type) where S <: AbstractSimState
     @debug "Measuring" op _group=:api
@@ -82,21 +89,24 @@ function get_measurement_result(state::S, op::CircuitOp.Type) where S <: Abstrac
         if projection[3] === nothing
             if projection[2]<=len
                 result = rand(Bool[0,1])
-                return (classical_random_result(op.pauli, result),projection[2])
+                return (classical_random_result(op.pauli, result), projection[2], ms.quantum_memory)
             else
                 (quantum_state, result) = quantum_measurement(state, op, num_qubits)
-                return (quantum_result(op.pauli, result),projection[2], quantum_state)
+                return (quantum_result(op.pauli, result), projection[2], quantum_state)
             end
         else
             result = Bool(projection[3]>>1)
-            return (classical_deterministic_result(op.pauli, result),projection[2])
+            return (classical_deterministic_result(op.pauli, result), projection[2], ms.quantum_memory)
         end
     end
 end
 
 ##
-"""Perform quantum measurement simulation on given state using QuantumClifford.jl backend"""
-function quantum_measurement(state::ComputerState, op::CircuitOp.Type, num_qubits::Int)
+"""
+    quantum_measurement(state::ComputerState, op::CircuitOp.Type, num_qubits::Int) -> Tuple{GeneralizedStabilizer, Bool}
+Perform quantum measurement simulation on given state using QuantumClifford.jl backend
+"""
+function quantum_measurement(state::SimState, op::CircuitOp.Type, num_qubits::Int)
     magicqubits = collect(num_qubits-state.num_gadgets+1:num_qubits)
     quantum_state = state.memory_state.quantum_memory
     if quantum_state === nothing
@@ -109,14 +119,17 @@ function quantum_measurement(state::ComputerState, op::CircuitOp.Type, num_qubit
     end
 end
 
-"""Perform quantum measurement simulation on given state using classical sampling according to weight determined by user named outcome_probs"""
+"""
+    quantum_measurement(state::DummyState, op::CircuitOp.Type, num_qubits::Int) -> Tuple{GeneralizedStabilizer, Bool}
+Perform quantum measurement simulation on given state using classical sampling according to weight determined by user named outcome_probs
+"""
 function quantum_measurement(state::DummyState, op::CircuitOp.Type, num_qubits::Int)
     quantum_state = state.memory_state.quantum_memory
     result = wsample([false,true],state.outcome_probs)
     return (quantum_state,result)
 end
 
-"""Resolve conditional circuit operations defined by CircuitOp.BitConditional"""
+"""Resolve conditional circuit operations defined by CircuitOp.BitConditional within circuit defined in state.circuit"""
 function resolve_conditionals(state::S) where S <: AbstractSimState
     circuit=state.circuit
     ms=state.memory_state

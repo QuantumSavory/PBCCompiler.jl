@@ -107,7 +107,7 @@ end
 abstract type AbstractSimState end
 
 """Execution state for real backend simulation."""
-struct ComputerState <: AbstractSimState
+struct SimState <: AbstractSimState
     """Contain current circuit object"""
     circuit::Circuit
     """Number of gadgets inserted to replace nonclifford circuit operations"""
