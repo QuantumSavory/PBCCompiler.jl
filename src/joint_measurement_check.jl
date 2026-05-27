@@ -47,7 +47,7 @@ end
 """
     check_PPM(s::Stabilizer,op::CircuitOp.Type, num_qubits::Int) -> Tuple{MixedStabilizer, Int64, Any}
 
-Function that performs commutation and depedency checks on Pauli Product Measurement according to stabilizer list
+Function that performs commutation and dependency checks on Pauli Product Measurement according to stabilizer list
 
 It returns
 - a stabilizer that might not be in canonical form
@@ -136,7 +136,7 @@ function resolve_conditionals(state::S) where S <: AbstractSimState
     creg=ms.classical_register
     index=find_BitConditional_indices(circuit)
     for i in index
-        @debug("Start resoving BitConditional at $i")
+        @debug("Start resolving BitConditional at $i")
         operation=circuit[i]
         control_bit=creg[operation.bit]
         if control_bit !== nothing
