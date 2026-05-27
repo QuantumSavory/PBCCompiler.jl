@@ -7,7 +7,7 @@ include("affectedqubits.jl")
 include("plotting.jl")
 include("pair_transformation.jl")
 include("preprocess.jl")
-include("Random_Circuit.jl")
+include("random_circuit.jl")
 include("joint_measurement_check.jl")
 include("logic.jl")
 

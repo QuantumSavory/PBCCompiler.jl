@@ -1,7 +1,4 @@
-
-"""
-Functions for querying which qubits are affected by circuit operations.
-"""
+#Functions for querying which qubits are affected by circuit operations.
 ##
 using Moshi.Match: @match
 """
