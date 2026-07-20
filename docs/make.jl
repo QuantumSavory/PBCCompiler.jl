@@ -20,5 +20,6 @@ makedocs(
 )
 
 deploydocs(
-    repo = "github.com/QuantumSavory/PBCCompiler.jl.git"
+    repo = "github.com/QuantumSavory/PBCCompiler.jl.git",
+    push_preview = true,
 )
