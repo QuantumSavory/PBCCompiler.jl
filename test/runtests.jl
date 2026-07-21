@@ -1,22 +1,23 @@
-using PBCCompiler
-using TestItemRunner
+JET_flag = ARGS == ["jet"]
 
-JET_flag = false
-
-if get(ENV, "JET_TEST", "") != "true"
-    @info "Skipping JET tests -- must be explicitly enabled."
-    @info "Environment must set JET_TEST=true."
+if JET_flag
+    @info "Running JET tests in their dedicated test environment."
+    using Pkg
+    Pkg.activate(joinpath(@__DIR__, "projects", "jet"))
+    Pkg.instantiate()
 else
-    JET_flag = true
+    @info "Skipping JET tests -- pass `test_args=[\"jet\"]` to Pkg.test to enable them."
 end
 
-using Pkg
-JET_flag && Pkg.add("JET")
+using PBCCompiler
+using TestItemRunner
 
 # filter for the test
 testfilter = ti -> begin
     exclude = Symbol[]
-    if !JET_flag
+    if JET_flag
+        return :jet in ti.tags
+    else
         push!(exclude, :jet)
     end
     if !(VERSION >= v"1.10")
