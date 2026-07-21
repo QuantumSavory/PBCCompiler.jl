@@ -1,5 +1,5 @@
 @testitem "affectedqubits" tags=[:affectedqubits] begin
-
+##
 using PBCCompiler
 using PBCCompiler: Circuit, CircuitOp, Pauli, Measurement, ExpHalfPiPauli, ExpQuatPiPauli, ExpEighPiPauli, PrepMagic, PauliConditional, BitConditional, affectedqubits
 using QuantumClifford: @P_str

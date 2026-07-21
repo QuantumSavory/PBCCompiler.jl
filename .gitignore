@@ -7,3 +7,5 @@ scratch/
 .history
 .vscode
 *.png
+dev.jl
+test/.CondaPkg

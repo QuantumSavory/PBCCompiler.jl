@@ -1,5 +1,38 @@
+# ============================================================
+# Kernel and Traversal Architecture
+# See docstring below for classification taxonomy.
+# ============================================================
 """
-Circuit traversal utilities for gate simplifications and transformations.
+    Kernel and Traversal Architecture
+
+Preprocessing operations are classified by their gate transformation arity.
+The implementation strategy differs by class. Filter passes (which remove gates by index or condition) are implemented
+directly in `preprocess.jl` without a dedicated traversal and are not classified
+here.
+
+# Class 1 — Pair transformation (2 → 2)  [dedicated traversal]
+
+The dominant case. A kernel takes two gates and returns two modified
+gates. Traversal and kernel are decoupled: `traversal` owns all iteration
+and mutation; kernels are pure functions passed as arguments.
+
+    Kernel signature:  f(g1::Gate, g2::Gate) -> (Gate, Gate)
+    Traversal:         `traversal(circ, f)`
+
+Kernels of this class live in `pair_transformation.jl`.
+
+# Class 2 — Expanding transformations (1 → N)  [inline]
+
+A single gate expands into N > 1 gates. Currently, 1→3 and 1→4 cases are
+implemented with traversal and kernel logic co-located in the preprocessing
+function in `preprocess.jl`. There is no shared traversal for this class.
+
+    Cases:  1→3 (`<remove_pauliconditional>`), 1→4 (`<gadgetize>`)
+
+# Extension note
+
+If additional 1→N cases are added, consider extracting a dedicated
+`_flatmap_gates` traversal analogous to `traversal`.
 """
 
 """
@@ -92,6 +125,7 @@ function _traversal_left!(circuit::Circuit, pair_transformation, start_idx::Int,
     while i >= start_idx && i >= 1
         op1 = circuit[i]
         op2 = circuit[i + 1]
+        @debug("pair transformation between $i and $i + 1")
 
         result = pair_transformation(op1, op2)
 
