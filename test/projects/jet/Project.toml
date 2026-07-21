@@ -1,0 +1,12 @@
+[deps]
+JET = "c3a54625-cd67-489e-a8e7-0a5a0ff4e31b"
+PBCCompiler = "66660b70-1c9c-4e13-82cc-f550c154eed2"
+Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+TestItemRunner = "f8b46487-2199-4994-9208-9a1283c18c0a"
+
+[sources]
+PBCCompiler = {path = "../../.."}
+
+[compat]
+TestItemRunner = "0.2.3, 1"

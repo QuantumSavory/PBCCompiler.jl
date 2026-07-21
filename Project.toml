@@ -4,7 +4,7 @@ version = "0.1.0"
 authors = ["Stefan Krastanov <stefan@krastanov.org>"]
 
 [workspace]
-projects = ["benchmark", "docs"]
+projects = ["benchmark", "docs", "test", "test/projects/jet"]
 
 [deps]
 Moshi = "2e0e35c7-a2e4-4343-998d-7ef72827ed2d"
