@@ -18,6 +18,6 @@ PBCCompilerMakieExt = "Makie"
 
 [compat]
 Makie = "0.24"
-Moshi = "0.3"
-QuantumClifford = "0.10, 0.11"
+Moshi = "0.3.12"
+QuantumClifford = "0.11.5"
 julia = "1.12"
