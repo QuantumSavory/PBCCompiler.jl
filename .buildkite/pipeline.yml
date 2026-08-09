@@ -1,8 +1,10 @@
 env:
-  CODECOV_TOKEN: 6dfc8e6b-e2fe-4715-be78-a8d1c61bfb17
   JULIA_NUM_THREADS: auto,auto
   PYTHON: ""
   PYCALL_DEBUG_BUILD: yes
+
+secrets:
+  - CODECOV_TOKEN
 
 steps:
   - label: "PBCCompiler Tests - {{matrix.LABEL}}"
