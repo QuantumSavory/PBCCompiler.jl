@@ -20,12 +20,14 @@ ops; if `num_qubits == 1` only the Exp* op types are used.
 function random_test_circuit(num_ops::Int, num_qubits::Int)::Circuit
     qubits = collect(1:num_qubits)
 
-    # Return a random non-identity PauliOperator of length n.
+    # Return a random non-identity PauliOperator of length n with real phase
+    # (+/-1). Imaginary phases (+/-i) are non-Hermitian and rejected by
+    # validate_CircuitOp, so they must never be generated here.
     function nonid_pauli(n; nophase=true)
         while true
-            p = random_pauli(n; nophase=nophase)
+            p = random_pauli(n; nophase=true)
             if !iszero(p.xz)
-                return p
+                return nophase ? p : (rand(Bool) ? p : -p)
             end
         end
     end
@@ -54,8 +56,8 @@ function random_test_circuit(num_ops::Int, num_qubits::Int)::Circuit
     end
 
     for i in 1:num_qubits
-        p = nonid_pauli(num_qubits; nophase=true)
-        push!(ops, CircuitOp.Measurement(p, i, qubits))
+        #p = nonid_pauli(1; nophase=true)
+        push!(ops, CircuitOp.Measurement(P"Z", i, [i]))
     end
 
     return ops

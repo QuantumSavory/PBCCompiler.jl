@@ -9,32 +9,80 @@ struct PauliQubitMismatchError <: Exception
     msg::String
 end
 
-"""Function for checking if the pauli and qubits field denotes different number of qubits"""
+"""
+Validate a single circuit operation, throwing a descriptive error for inputs the
+compilation pipeline cannot process: Pauli/qubit length mismatches, imaginary
+(±i) Pauli phases, empty qubit lists, non-positive qubit or classical bit
+indices, overlapping PauliConditional registers, and PrepMagic (not yet
+supported by the pipeline).
+"""
 function validate_CircuitOp(op::CircuitOp.Type)
     @match op begin
         CircuitOp.PauliConditional(cp, cq, tp, tq) => begin
             if cq == Int64[] || tq == Int64[]
-                throw(PauliQubitMismatchError("$name($p, $q): Pauli String can't be empty"))
-            else
-                validate_CircuitOp(ExpQuatPiPauli(cp, cq))
-                validate_CircuitOp(ExpQuatPiPauli(tp, tq))
+                throw(PauliQubitMismatchError("PauliConditional($cp, $cq, $tp, $tq): control and target qubit lists can't be empty"))
             end
+            if !isempty(intersect(cq, tq))
+                throw(ArgumentError("PauliConditional($cp, $cq, $tp, $tq): control and target qubit registers overlap; the decomposition into Pauli Product Rotations requires disjoint registers"))
+            end
+            validate_CircuitOp(ExpQuatPiPauli(cp, cq))
+            validate_CircuitOp(ExpQuatPiPauli(tp, tq))
+        end
+        CircuitOp.PrepMagic(qubit, qubits) => begin
+            throw(ArgumentError("PrepMagic($qubit, $qubits) is not supported by the compilation pipeline; non-Clifford rotations are gadgetized automatically instead"))
+        end
+        CircuitOp.BitConditional(inner_op, bit) => begin
+            if bit < 1
+                throw(ArgumentError("BitConditional(…, $bit): classical bit indices must be ≥ 1"))
+            end
+            validate_CircuitOp(inner_op)
         end
         _ => begin
             p=paulis(op)
             q=affectedqubits(op)
             name=variant_name(op)
+            if isempty(q)
+                throw(PauliQubitMismatchError("$name($p, $q): operation affects no qubits"))
+            end
+            if any(<(1), q)
+                throw(ArgumentError("$name($p, $q): qubit indices must be ≥ 1"))
+            end
             if length(p) != length(q)
                 throw(PauliQubitMismatchError("$name($p, $q): The length of the Pauli string is not the same as the number of affected qubits. Please check the input operation."))
+            end
+            # Odd phase exponents (0x01/0x03) denote ±i·P, which is not Hermitian
+            # and therefore not a valid rotation axis or measurement observable
+            if isodd(p.phase[])
+                throw(ArgumentError("$name($p, $q): Pauli strings with imaginary phase (±i) are not Hermitian and cannot define a rotation or measurement."))
+            end
+            if isa_variant(op, CircuitOp.Measurement) && op.bit < 1
+                throw(ArgumentError("$name($p, $q): classical bit indices must be ≥ 1, got $(op.bit)"))
             end
         end
     end
 end
 
-"""Check every CircuitOp in a circuit"""
+"""
+Validate every CircuitOp in a circuit (see `validate_CircuitOp`), plus the
+circuit-level invariants the runtime relies on: measurement bit indices must be
+distinct (a duplicate would silently drop a measurement), and every
+BitConditional must be controlled by a bit that some Measurement writes.
+"""
 function validate_circuit(circuit::Circuit)
     for op in circuit
         validate_CircuitOp(op)
+    end
+    meas_indices = find_variant_indices(circuit, Measurement)
+    bits = [circuit[i].bit for i in meas_indices]
+    if !allunique(bits)
+        throw(ArgumentError("Duplicate classical bit indices among measurements ($bits): each Measurement must write a distinct bit"))
+    end
+    bitset = Set(bits)
+    for i in find_variant_indices(circuit, BitConditional)
+        b = circuit[i].bit
+        if !(b in bitset)
+            throw(ArgumentError("BitConditional at position $i is controlled by bit $b, which no Measurement in the circuit writes"))
+        end
     end
 end
 
@@ -69,8 +117,7 @@ Each BitConditional CircuitOp contains a gadget(a set of four consecutive Circui
     perform a joint measurement P ⊗ Z between data and ancilla,
     then apply a conditional Clifford correction
 """
-function gadgetize(op::CircuitOp.Type, num_input_qubit::Int, num_magic_state::Int)
-    num_bit=num_input_qubit
+function gadgetize(op::CircuitOp.Type, num_input_qubit::Int, num_bit::Int, num_magic_state::Int)
     if isa_variant(op,CircuitOp.ExpEighPiPauli)
         P=paulis(op)
         Q=affectedqubits(op)
@@ -178,7 +225,9 @@ function remove_clifford(circuit::Circuit)
 end
 
 """
-    group_nonclifford(circuit::Circuit)->Nothing
+    remove_nonclifford(circuit::Circuit)->Nothing
+
+Replace every non-Clifford rotation with its magic-state gadget (see `gadgetize`).
 
 **Kernel class:** expanding transformation (1→4)
 **Traversal:** inline — traversal and kernel logic are co-located in this
@@ -187,11 +236,12 @@ function, mutates in place.
 function remove_nonclifford(circuit::Circuit)
     indices=find_variant_indices(circuit,ExpEighPiPauli)
     num_input_qubit=get_circuit_width(circuit)
+    num_bit=max(get_bit_number(circuit), num_input_qubit)
     num_magic_state=0
     for i in reverse(indices)
         num_magic_state+=1
         op=circuit[i]
-        gadget = gadgetize(op, num_input_qubit, num_magic_state)
+        gadget = gadgetize(op, num_input_qubit, num_bit, num_magic_state)
         splice!(circuit, i, gadget)
     end
 end
@@ -203,7 +253,7 @@ Removes all gates after last CircuitOp.Measurement. No traversal+kernel structur
 operates directly on the underlying gate sequence.
 """
 function remove_post_measurement(circuit::Circuit)
-    # remove all gates after the last measurement
-    index=maximum(find_variant_indices(circuit,Measurement))
-    resize!(circuit, index)
+    indices=find_variant_indices(circuit,Measurement)
+    isempty(indices) && return circuit
+    resize!(circuit, maximum(indices))
 end

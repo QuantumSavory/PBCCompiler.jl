@@ -5,6 +5,7 @@
 - Compute and compile input circuit using QuantumClifford backend or dummy backend
 - Perform joint measurement on Pauli Product Measurements and resolve bit conditional circuit operations
 - Performing preprocess on input circuit and output circuit in Pauli Product form
+- Input validation rejects malformed circuits up front; classical bits belonging to inserted gadgets no longer collide with bits belonging to measurements in the input circuit
 - Functions realizing pair transformation operations between a pair of circuit operations
 - Basic datastructures for representing circuits through ADT with Moshi.jl
 - Basic circuit traversal routines
