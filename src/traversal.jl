@@ -45,6 +45,7 @@ Traverse a circuit and apply `pair_transformation` to each pair of adjacent oper
 - `pair_transformation`: A function that takes two operations and returns:
   - A tuple of operations `(op1, op2)` to replace the current pair
   - A single operation to replace both operations (combining them)
+  - The empty tuple `()` to delete both operations (they cancel out)
   - `nothing` to keep the original operations unchanged
 - `direction`: `:right` to traverse left-to-right, `:left` to traverse right-to-left (default: `:right`)
 - `starting_index`: Index to start traversal from (default: `1`)
@@ -72,8 +73,12 @@ function traversal(circuit::Circuit, pair_transformation, direction::Symbol=:rig
     if starting_index < 1 || starting_index > length(circuit) - 1
         return circuit
     end
-    if actual_end < 1 || actual_end > length(circuit) - 1
+    if actual_end > length(circuit) - 1
         actual_end = length(circuit) - 1
+    end
+    # An end index left of the start means there is no pair to visit
+    if actual_end < starting_index
+        return circuit
     end
 
     if direction === :right
@@ -101,6 +106,12 @@ function _traversal_right!(circuit::Circuit, pair_transformation, start_idx::Int
         if result === nothing
             # No change, move to next pair
             i += 1
+        elseif result isa Tuple && length(result) == 0
+            # Empty tuple: the pair cancels out - remove both operations
+            deleteat!(circuit, i:i+1)
+            end_idx = min(end_idx, length(circuit) - 1)
+            # Step back so the newly adjacent pair around the gap is revisited
+            i = max(start_idx, i - 1)
         elseif result isa Tuple && !(result isa CircuitOp.Type) && length(result) == 2
             # Replace with tuple elements (explicitly check it's a 2-tuple and not a CircuitOp)
             circuit[i] = result[1]
@@ -132,6 +143,11 @@ function _traversal_left!(circuit::Circuit, pair_transformation, start_idx::Int,
         if result === nothing
             # No change, move to previous pair
             i -= 1
+        elseif result isa Tuple && length(result) == 0
+            # Empty tuple: the pair cancels out - remove both operations
+            deleteat!(circuit, i:i+1)
+            # Step back, clamping so circuit[i + 1] stays in bounds
+            i = min(i - 1, length(circuit) - 1)
         elseif result isa Tuple && !(result isa CircuitOp.Type) && length(result) == 2
             # Replace with tuple elements (explicitly check it's a 2-tuple and not a CircuitOp)
             circuit[i] = result[1]

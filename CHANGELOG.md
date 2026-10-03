@@ -9,3 +9,4 @@
 - Basic datastructures for representing circuits through ADT with Moshi.jl
 - Basic circuit traversal routines
 - Plotting extension through Makie.jl
+- `traversal` deletes a pair when the transformation returns `()`; inverse rotation pairs now cancel completely

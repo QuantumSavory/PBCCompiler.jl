@@ -223,7 +223,15 @@ function conjugated_by_ExpQuatPiPauli(op1::CircuitOp.Type, op2::CircuitOp.Type)
 end
 ##
 """
-Helper functions to cancel out adjacent PPR pair
+    merge_rotations(op1::CircuitOp.Type, op2::CircuitOp.Type)
+
+Combine an adjacent pair of Pauli Product Rotations about the same axis.
+
+Two rotations of the same angle about the same signed Pauli axis merge into one
+rotation of twice the angle. A rotation followed by its inverse (opposite-sign
+axis) — or any pair of pi/2 rotations about the same axis, which compose to a
+global phase — cancels entirely: the empty tuple `()` is returned so `traversal`
+deletes both operations. Returns `nothing` when the pair cannot be merged.
 """
 function merge_rotations(op1::CircuitOp.Type, op2::CircuitOp.Type)
     @match (op1,op2) begin
@@ -233,7 +241,8 @@ function merge_rotations(op1::CircuitOp.Type, op2::CircuitOp.Type)
             q = [x for x in 1:qm]
             if p1.xz == p2.xz
                 if xor(p1.phase[1], p2.phase[1]) == 0x02
-                    return ExpHalfPiPauli(p1*p2,q)
+                    # exp(-i*pi/8*P) * exp(-i*pi/8*(-P)) = identity
+                    return ()
                 elseif op1.pauli.phase == op2.pauli.phase
                     return ExpQuatPiPauli(p1,q)
                 else
@@ -248,7 +257,8 @@ function merge_rotations(op1::CircuitOp.Type, op2::CircuitOp.Type)
             q = [x for x in 1:qm]
             if p1.xz == p2.xz
                 if xor(p1.phase[1], p2.phase[1]) == 0x02
-                    return ExpHalfPiPauli(p1*p2,q)
+                    # exp(-i*pi/4*P) * exp(-i*pi/4*(-P)) = identity
+                    return ()
                 elseif op1.pauli.phase == op2.pauli.phase
                     return ExpHalfPiPauli(p1,q)
                 else
@@ -259,10 +269,10 @@ function merge_rotations(op1::CircuitOp.Type, op2::CircuitOp.Type)
         end
         (ExpHalfPiPauli(),ExpHalfPiPauli()) => begin
             (p1,p2) = complete_paulis(op1,op2)
-            qm = maximum(sort(union(affectedqubits(op1), affectedqubits(op2))))
-            q = [x for x in 1:qm]
             if p1.xz == p2.xz
-                return ExpHalfPiPauli(p1*p2,q)
+                # Two pi/2 rotations about the same axis compose to +/-identity
+                # (a global phase), regardless of the axis signs
+                return ()
             else return nothing
             end
         end
