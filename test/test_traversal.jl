@@ -85,6 +85,18 @@ end
     @test isa_variant(circuit[1], CircuitOp.Pauli)
 end
 
+@testset "traversal deletes both ops on empty-tuple result" begin
+    cancel_all(op1, op2) = ()
+    circuit = Circuit([Pauli(P"X", [1]), Pauli(P"Y", [1])])
+    traversal(circuit, cancel_all, :right)
+    @test isempty(circuit)
+    # :left direction, deletion at the tail must not read out of bounds
+    circuit = Circuit([Pauli(P"X", [1]), Pauli(P"Y", [1]), Pauli(P"Z", [1])])
+    delete_yz(op1, op2) = (op1.pauli == P"Y" && op2.pauli == P"Z") ? () : nothing
+    traversal(circuit, delete_yz, :left)
+    @test length(circuit) == 1 && circuit[1].pauli == P"X"
+end
+
 @testset "Left direction traversal" begin
     swap_transform(op1, op2) = (op2, op1)
 
@@ -122,6 +134,15 @@ end
     @test circuit[2].pauli == P"Z"
     @test circuit[3].pauli == P"Y"
     @test circuit[4].pauli == P"I"
+end
+
+@testset "traversal with end_index left of start is a no-op" begin
+    circuit = Circuit([Pauli(P"X", [1]), Pauli(P"Y", [1]), Pauli(P"Z", [1])])
+    snapshot = copy(circuit)
+    traversal(circuit, (a, b) -> (b, a), :left, 1, 0)
+    @test circuit == snapshot
+    traversal(circuit, (a, b) -> (b, a), :right, 2, 1)
+    @test circuit == snapshot
 end
 
 @testset "Conditional transformation" begin

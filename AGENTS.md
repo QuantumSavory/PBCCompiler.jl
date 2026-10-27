@@ -50,6 +50,7 @@ traversal(circuit, pair_transformation, direction=:right, starting_index=1, end_
 - `pair_transformation(op1, op2)` returns:
   - `(new_op1, new_op2)` tuple to replace the pair
   - Single operation to combine the pair into one
+  - `()` to delete both operations (they cancel out)
   - `nothing` to keep unchanged
 - Supports left-to-right (`:right`) or right-to-left (`:left`) traversal
 - Used for gate commutation, simplification, and compilation passes

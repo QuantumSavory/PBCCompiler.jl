@@ -1,7 +1,7 @@
 @testitem "Preprocess" tags=[:preprocess] begin
 
 using PBCCompiler
-using PBCCompiler: Circuit, CircuitOp, Pauli, Measurement, ExpHalfPiPauli, ExpQuatPiPauli,ExpEighPiPauli, PauliConditional, BitConditional, preprocess_circuit, run, SimRuntime, DummyRuntime
+using PBCCompiler: Circuit, CircuitOp, Pauli, Measurement, ExpHalfPiPauli, ExpQuatPiPauli,ExpEighPiPauli, PauliConditional, BitConditional, preprocess_circuit, run, SimRuntime, DummyRuntime, group_nonclifford
 using PBCCompiler.MeasurementResult
 using .MeasurementResult: ClassicalDetermRes, ClassicalRandomRes, QuantumRes
 using QuantumClifford: @P_str, @S_str
@@ -43,6 +43,35 @@ end
     @test circuit[6] == Measurement(P"XZ", 2, [1, 2])
 end
 
+
+@testset "group_nonclifford with a non-Clifford at index 1" begin
+    e1 = ExpEighPiPauli(P"Z", [1])
+    c  = ExpQuatPiPauli(P"X", [1])
+    e2 = ExpEighPiPauli(P"Z", [1])
+    circuit = Circuit([e1, c, e2])
+    group_nonclifford(circuit)
+    # e1 has nothing to its left and must stay put; e2 commutes past c (conjugated)
+    @test circuit[1] == e1
+    @test isa_variant(circuit[2], CircuitOp.ExpEighPiPauli)
+    @test circuit[3] == c
+end
+
+@testset "inverse rotations cancel instead of leaving a placeholder" begin
+    merge_ops = PBCCompiler.merge_ops
+    # pi/8 followed by -pi/8 about the same axis is the identity
+    circuit = Circuit([ExpEighPiPauli(P"Z", [1]), ExpEighPiPauli(-P"Z", [1])])
+    merge_ops(circuit)
+    @test isempty(circuit)
+    # two pi/2 rotations about the same axis are a global phase
+    circuit = Circuit([ExpHalfPiPauli(P"Z", [1]), ExpHalfPiPauli(P"Z", [1])])
+    merge_ops(circuit)
+    @test isempty(circuit)
+    # same-sign pi/8 pair still merges into a pi/4 rotation
+    circuit = Circuit([ExpEighPiPauli(P"Z", [1]), ExpEighPiPauli(P"Z", [1])])
+    merge_ops(circuit)
+    @test length(circuit) == 1
+    @test isa_variant(circuit[1], CircuitOp.ExpQuatPiPauli)
+end
 
 @testset "SimRuntime Correctness" begin
     circuit = Circuit([
