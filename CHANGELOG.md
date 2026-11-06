@@ -9,3 +9,4 @@
 - Basic datastructures for representing circuits through ADT with Moshi.jl
 - Basic circuit traversal routines
 - Plotting extension through Makie.jl
+- Documentation site scaffold: manual pages (circuits, compilation pipeline, execution, I/O, visualization), a runnable quickstart, and a per-file API reference

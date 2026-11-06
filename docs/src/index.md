@@ -1,33 +1,75 @@
 # PBCCompiler.jl
 
 ```@meta
+CurrentModule = PBCCompiler
 DocTestSetup = quote
     using QuantumClifford, PBCCompiler
 end
 ```
 
-Tools for Pauli Based Computation (PBC), a modality of quantum computation.
+Tools for compiling gate-based quantum circuits into Pauli-Based Computation (PBC)
+form and executing them against stabilizer-state backends.
 
-## Overview
+!!! note "TODO"
+    Write a short overview: what PBC is, what this package does, and who it is for.
+    Cite the reference construction (Litinski, *A Game of Surface Codes*,
+    [Quantum 3, 128 (2019)](https://quantum-journal.org/papers/q-2019-03-05-128/)).
 
-PBCCompiler.jl provides infrastructure for compiling and executing Pauli-based quantum circuits. The package includes:
+## Installation
 
-- **Circuit Operations** - Algebraic data types for representing quantum operations
-- **Compilation Pipeline** - Transform circuits through optimization stages
-- **Runtime System** - Execute circuits on quantum backends
+```julia
+using Pkg
+Pkg.add(url = "https://github.com/QuantumSavory/PBCCompiler.jl")
+```
 
-## Circuit Operations
+## Quickstart
 
-The `CircuitOp` type represents quantum operations:
+A circuit is a vector of [`CircuitOp`](@ref) operations. [`run`](@ref) preprocesses
+a copy of it into Pauli Product form and then executes the measurements against a
+runtime, returning the final [`CompilerState`](@ref).
 
-- `Measurement` - Pauli measurement with classical bit output
-- `Pauli` - Pauli gate application
-- `ExpHalfPiPauli`, `ExpQuatPiPauli`, `ExpEighPiPauli` - Rotation gates
-- `PrepMagic` - Magic state preparation
-- `PauliConditional` - Pauli gate conditioned on another Pauli
-- `BitConditional` - Operation conditioned on classical bit
+```@example quickstart
+using PBCCompiler
+using PBCCompiler: Circuit, CircuitOp, SimRuntime
+using QuantumClifford: @P_str
+using Random
+Random.seed!(1)  # SimRuntime samples measurement outcomes; seed for reproducibility
 
-## Related Packages
+circuit = Circuit([
+    CircuitOp.PauliConditional(P"X", [1], P"Z", [2]),
+    CircuitOp.ExpHalfPiPauli(P"YZ", [1, 2]),
+    CircuitOp.ExpEighPiPauli(P"Z", [2]),
+    CircuitOp.Measurement(P"Z", 1, [1]),
+    CircuitOp.Measurement(P"Z", 2, [2]),
+])
 
-- [QuantumClifford.jl](https://github.com/QuantumSavory/QuantumClifford.jl) - Stabilizer formalism
-- [BPGates.jl](https://github.com/QuantumSavory/BPGates.jl) - Bell-preserving gates
+state = PBCCompiler.run(circuit, SimRuntime())
+```
+
+To see just the compiled circuit, apply [`preprocess_circuit`](@ref) yourself.
+It rewrites its argument in place:
+
+```@example quickstart
+compiled = copy(circuit)
+PBCCompiler.preprocess_circuit(compiled)
+compiled
+```
+
+!!! note
+    PBCCompiler does not export names yet. Qualify them (`PBCCompiler.run`) or import
+    them explicitly (`using PBCCompiler: Circuit, CircuitOp`). Don't bring `run` into
+    scope unqualified, because it would shadow `Base.run`.
+
+## Where to go next
+
+- [Circuits](@ref): the operation types a circuit is built from.
+- [Compilation pipeline](@ref): what `preprocess_circuit` does, stage by stage.
+- [Execution and runtimes](@ref): running a compiled circuit and interpreting measurement results.
+- [Input and output](@ref): reading OpenQASM and saving results.
+- [Visualization](@ref): plotting circuits with Makie.
+- [API reference](@ref): every documented name, grouped by source file.
+
+## Related packages
+
+- [QuantumClifford.jl](https://github.com/QuantumSavory/QuantumClifford.jl): stabilizer formalism backend.
+- [BPGates.jl](https://github.com/QuantumSavory/BPGates.jl): Bell-preserving gates.
